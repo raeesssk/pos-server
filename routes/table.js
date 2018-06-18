@@ -16,7 +16,7 @@ router.get('/', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    const query = client.query("SELECT * FROM table_master tm LEFT OUTER JOIN area_master am on tm.tm_am_id = am.am_id where tm.tm_status = 0 order by tm.tm_id desc");
+    const query = client.query("SELECT * FROM table_master tm LEFT OUTER JOIN area_master am on tm.tm_am_id = am.am_id where tm.tm_status = 0 order by tm.tm_id asc");
     query.on('row', (row) => {
       results.push(row);
     });
@@ -188,18 +188,15 @@ router.post('/isreserved', oauth.authorise(), (req, res, next) => {
       return res.status(500).json({success: false, data: err});
     }
 
-    client.query('UPDATE table_master SET tm_isreserved=1 WHERE tm_id=($1)', [req.body.tm_id]);
-    // SQL Query > Insert Data
-    // client.query('UPDATE employee_master SET cm_code=$1, cm_name=$2, cm_mobile=$3, cm_email=$4, cm_address=$5, cm_city=$6, cm_state=$7, cm_pin_code=$8, cm_car_name=$9, cm_car_model=$10, cm_car_number=$11 where cm_id=$12',[req.body.cm_code,req.body.cm_name,req.body.cm_mobile,req.body.cm_email,req.body.cm_address,req.body.cm_city,req.body.cm_state,req.body.cm_pin_code,req.body.cm_car_name,req.body.cm_car_model,req.body.cm_car_number,id]);
-    // SQL Query > Select Data
-    const query = client.query('SELECT * FROM table_master');
-    query.on('row', (row) => {
-      results.push(row);
-    });
-    query.on('end', () => {
-      done();
-      // pg.end();
-      return res.json(results);
+    client.query('BEGIN;');
+    var singleInsert = 'update table_master set tm_isreserved=1 WHERE tm_id=($1) RETURNING *',
+        params = [req.body.tm_id];
+        client.query(singleInsert, params, function (error, result) {
+        results.push(result.rows[0]); // Will contain your inserted rows
+        
+        client.query('COMMIT;');
+        done();
+        return res.json(results);
     });
   done(err);
   });
@@ -214,19 +211,15 @@ router.post('/notreserved', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-
-    client.query('UPDATE table_master SET tm_isreserved=0 WHERE tm_id=($1)', [req.body.tm_id]);
-    // SQL Query > Insert Data
-    // client.query('UPDATE employee_master SET cm_code=$1, cm_name=$2, cm_mobile=$3, cm_email=$4, cm_address=$5, cm_city=$6, cm_state=$7, cm_pin_code=$8, cm_car_name=$9, cm_car_model=$10, cm_car_number=$11 where cm_id=$12',[req.body.cm_code,req.body.cm_name,req.body.cm_mobile,req.body.cm_email,req.body.cm_address,req.body.cm_city,req.body.cm_state,req.body.cm_pin_code,req.body.cm_car_name,req.body.cm_car_model,req.body.cm_car_number,id]);
-    // SQL Query > Select Data
-    const query = client.query('SELECT * FROM table_master');
-    query.on('row', (row) => {
-      results.push(row);
-    });
-    query.on('end', () => {
-      done();
-      // pg.end();
-      return res.json(results);
+    client.query('BEGIN;');
+    var singleInsert = 'update table_master set tm_isreserved=0 WHERE tm_id=($1) RETURNING *',
+        params = [req.body.tm_id];
+        client.query(singleInsert, params, function (error, result) {
+        results.push(result.rows[0]); // Will contain your inserted rows
+        
+        client.query('COMMIT;');
+        done();
+        return res.json(results);
     });
   done(err);
   });
@@ -246,7 +239,7 @@ router.post('/table/total', oauth.authorise(), (req, res, next) => {
     console.log(str);
     const strqry =  "SELECT count(tm_id) as total "+
                     "from table_master tm "+
-                    "LEFT OUTER JOIN area_master am on tm.tm_am_id = am.am_id "+
+                    "LEFT OUTER JOIN area_master am on tm.tm_am_id = am.am_id order by ASC "+
                     "where tm_status=0 "+
                     "and LOWER(tm_description||''||tm_size||''||tm_am_id) LIKE LOWER($1);";
 

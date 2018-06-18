@@ -30,7 +30,7 @@ var user = require('./routes/user');
 var sms = require('./routes/sms');
 var emailsent = require('./routes/emailsent');
 var backup = require('./routes/backup');
-
+var order= require('./routes/order');
 
 var pmx = require('pmx').init({
   http          : true, // HTTP routes logging (default: true)
@@ -79,6 +79,7 @@ app.use('/user', user);
 app.use('/sms', sms);
 app.use('/emailsent', emailsent);
 app.use('/backup', backup);
+app.use('/order',order);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
