@@ -39,7 +39,7 @@ router.post('/items', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    const query = client.query("SELECT pm.pm_description,pm.pm_image from product_master pm where pm_ctm_id=$1 order by pm_id ASC",[req.body.ctm_id]);
+    const query = client.query("SELECT pm.pm_description,pm.pm_image,pm.pm_rate,pm.pm_quantity from product_master pm where pm_ctm_id=$1 order by pm_id ASC",[req.body.ctm_id]);
     query.on('row', (row) => {
       results.push(row);
     });
