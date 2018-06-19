@@ -100,7 +100,7 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
   });
 });
 
-router.post('/edit/:ctmId', oauth.authorise(), (req, res, next) => {
+/*router.post('/edit/:ctmId', oauth.authorise(), (req, res, next) => {
   const results = [];
   const id = req.params.ctmId;
   pool.connect(function(err, client, done){
@@ -124,7 +124,7 @@ router.post('/edit/:ctmId', oauth.authorise(), (req, res, next) => {
     });
   done(err);
   });
-});
+});*/
 
 router.post('/edit/:ctmId', oauth.authorise(), (req, res, next) => {
   const results = [];
@@ -239,7 +239,7 @@ router.post('/table/total', oauth.authorise(), (req, res, next) => {
     console.log(str);
     const strqry =  "SELECT count(tm_id) as total "+
                     "from table_master tm "+
-                    "LEFT OUTER JOIN area_master am on tm.tm_am_id = am.am_id order by ASC "+
+                    "LEFT OUTER JOIN area_master am on tm.tm_am_id = am.am_id "+
                     "where tm_status=0 "+
                     "and LOWER(tm_description||''||tm_size||''||tm_am_id) LIKE LOWER($1);";
 

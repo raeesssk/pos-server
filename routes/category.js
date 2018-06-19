@@ -16,7 +16,7 @@ router.get('/', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    const query = client.query("SELECT * FROM CATEGORY_MASTER where ctm_status = 0 order by ctm_id ASC");
+    const query = client.query("SELECT * FROM CATEGORY_MASTER where ctm_status = 0 order by ctm_id desc");
     query.on('row', (row) => {
       results.push(row);
     });

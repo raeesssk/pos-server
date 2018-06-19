@@ -29,8 +29,9 @@ router.get('/', oauth.authorise(), (req, res, next) => {
   });
 });
 
-router.get('/starter', oauth.authorise(), (req, res, next) => {
+router.post('/items', oauth.authorise(), (req, res, next) => {
   const results = [];
+  
   pool.connect(function(err, client, done){
     if(err) {
       done();
@@ -38,7 +39,7 @@ router.get('/starter', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    const query = client.query("SELECT pm_description from product_master where pm_ctm_id=17 order by pm_id ASC");
+    const query = client.query("SELECT pm.pm_description,pm.pm_image from product_master pm where pm_ctm_id=$1 order by pm_id ASC",[req.body.ctm_id]);
     query.on('row', (row) => {
       results.push(row);
     });
