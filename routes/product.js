@@ -4,7 +4,22 @@ var oauth = require('../oauth/index');
 var pg = require('pg');
 var path = require('path');
 var config = require('../config.js');
+var multer = require('multer');
+var filenamestore = "";
 
+var Storage = multer.diskStorage({
+    destination: function (req, file, callback) {
+        // callback(null, "./images");
+          callback(null, './images');
+    },
+    filename: function (req, file, callback) {
+        var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
+        /*filenamestore = "../images"+fi;*/
+        callback(null, fi);
+    }
+});
+
+var upload = multer({ storage: Storage }).array("imgUploader"); 
 var pool = new pg.Pool(config);
 
 router.get('/', oauth.authorise(), (req, res, next) => {
@@ -39,7 +54,7 @@ router.post('/items', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    const query = client.query("SELECT pm.pm_description,pm.pm_image,pm.pm_rate,pm.pm_quantity from product_master pm where pm_ctm_id=$1 order by pm_id ASC",[req.body.ctm_id]);
+    const query = client.query("SELECT pm.pm_id,pm.pm_description,pm.pm_image,pm.pm_rate,pm.pm_quantity from product_master pm where pm_ctm_id=$1 order by pm_id ASC",[req.body.ctm_id]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -74,6 +89,28 @@ router.get('/:productId', oauth.authorise(), (req, res, next) => {
     });
     done(err);
   });
+});
+
+router.post('/upload/file/', oauth.authorise(), (req, res, next) => {
+  /*
+  const id = req.params.productId;*/
+
+
+  upload(req, res, function (err) { 
+    if (err) { 
+        return res.end("Something went wrong!"+err); 
+    } 
+    pool.connect(function(err, client, done){
+      if(err) {
+        done();
+        console.log("the error is"+err);
+        return res.status(500).json({success: false, data: err});
+      }/*
+      client.query('UPDATE product_master SET pm_image=$1 where pm_id=$2',[filenamestore,id]);*/
+      return res.end("File uploaded sucessfully!.");
+      done(err);
+    });
+  }); 
 });
 
 /*router.post('/add', oauth.authorise(), (req, res, next) => {

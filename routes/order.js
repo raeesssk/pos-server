@@ -144,7 +144,7 @@ router.post('/edit/:omId', oauth.authorise(), (req, res, next) => {
   done(err);
   });
 });
-router.post('/addAllx`', oauth.authorise(), (req, res, next) => {
+router.post('/addAll', oauth.authorise(), (req, res, next) => {
   const results = [];
 
   const image = req.body.image;
@@ -157,7 +157,7 @@ router.post('/addAllx`', oauth.authorise(), (req, res, next) => {
       return res.status(500).json({success: false, data: err});
     }
     // SQL Query > Insert Data
-    client.query('INSERT INTO product_master(pm_code, pm_name, pm_ctm_id, pm_purchase_cost, pm_selling_wholesale, pm_selling_retail, pm_vat_per, pm_image, pm_stock_minimum, pm_quantity, pm_opening_quantity, pm_damage_quantity, pm_ctn, pm_ctn_booking, pm_qty_booking, pm_last_quantity, pm_last_purchase_rate, pm_status) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,0,0,0,0,0,0)',[product.pm_code,product.pm_name,product.pm_ctm_id.ctm_id,product.pm_purchase_cost,product.pm_selling_wholesale,product.pm_selling_retail,product.pm_vat_per,image,product.pm_stock_minimum,product.pm_quantity,product.pm_quantity,product.pm_damage_quantity]);
+    client.query('INSERT INTO order_master(pm_code, pm_name, pm_ctm_id, pm_purchase_cost, pm_selling_wholesale, pm_selling_retail, pm_vat_per, pm_image, pm_stock_minimum, pm_quantity, pm_opening_quantity, pm_damage_quantity, pm_ctn, pm_ctn_booking, pm_qty_booking, pm_last_quantity, pm_last_purchase_rate, pm_status) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,0,0,0,0,0,0)',[product.pm_code,product.pm_name,product.pm_ctm_id.ctm_id,product.pm_purchase_cost,product.pm_selling_wholesale,product.pm_selling_retail,product.pm_vat_per,image,product.pm_stock_minimum,product.pm_quantity,product.pm_quantity,product.pm_damage_quantity]);
     
   // SQL Query > Select Data
     const query = client.query('SELECT * FROM product_master');
