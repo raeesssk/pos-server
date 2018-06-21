@@ -14,12 +14,12 @@ router.post('/upload/file/', oauth.authorise(), (req, res, next) => {
   var Storage = multer.diskStorage({
       destination: function (req, file, callback) {
           // callback(null, "./images");
-            callback(null, './images');
+            callback(null, '../pos/resources/assets/img/allimages');
             
       },
       filename: function (req, file, callback) {
           var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
-          filenamestore = "../images"+fi;
+          filenamestore = "../resources/assets/img"+fi;
           callback(null, fi);
       }
   });
@@ -139,8 +139,28 @@ router.get('/:productId', oauth.authorise(), (req, res, next) => {
 
 router.post('/add', oauth.authorise(), (req, res, next) => {
   const results = [];
-  const image = req.body.image;
   const product = req.body.product;
+  var Storage = multer.diskStorage({
+      destination: function (req, file, callback) {
+          // callback(null, "./images");
+            callback(null, '../pos/resources/assets/img/allimages');
+            
+      },
+      filename: function (req, file, callback) {
+          var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
+          filenamestore = "../resources/assets/img"+fi;
+          callback(null, fi);
+      }
+  });
+
+  var upload = multer({ storage: Storage }).array("imgUploader"); 
+  
+  upload(req, res, function (err) { 
+    if (err) { 
+        return res.end("Something went wrong!"+err); 
+    } 
+     
+  });
   pool.connect(function(err, client, done){
     if(err) {
       done();
@@ -150,7 +170,7 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
     }
 
     var singleInsert = 'INSERT INTO product_master(pm_description, pm_ctm_id, pm_rate, pm_quantity, pm_image, pm_status) values($1,$2,$3,$4,$5,0) RETURNING *',
-        params = [product.pm_description,product.pm_ctm_id.ctm_id,product.pm_rate,product.pm_quantity,image]
+        params = [product.pm_description,product.pm_ctm_id.ctm_id,product.pm_rate,product.pm_quantity,filenamestore]
     client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
         done();

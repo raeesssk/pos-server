@@ -31,7 +31,7 @@ var sms = require('./routes/sms');
 var emailsent = require('./routes/emailsent');
 var backup = require('./routes/backup');
 var order= require('./routes/order');
-
+var kitchen=require('./routes/kitchen');
 var pmx = require('pmx').init({
   http          : true, // HTTP routes logging (default: true)
   ignore_routes : [/socket\.io/, /notFound/], // Ignore http routes with this pattern (Default: [])
@@ -80,7 +80,7 @@ app.use('/sms', sms);
 app.use('/emailsent', emailsent);
 app.use('/backup', backup);
 app.use('/order',order);
-
+app.use('/kitchen',kitchen);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   var err = new Error('Not Found');
