@@ -8,7 +8,7 @@ var multer = require('multer');
 var filenamestore = "";
 
 
-router.post('/upload/file/', oauth.authorise(), (req, res, next) => {
+router.post('/upload/file', oauth.authorise(), (req, res, next) => {
 
 
   var Storage = multer.diskStorage({
@@ -24,7 +24,7 @@ router.post('/upload/file/', oauth.authorise(), (req, res, next) => {
       }
   });
 
-  var upload = multer({ storage: Storage }).array("imgUploader"); 
+  var upload = multer({ storage: Storage }).array("imgUploader");
   
   upload(req, res, function (err) { 
     if (err) { 
