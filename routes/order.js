@@ -201,4 +201,72 @@ router.post('/ongoing/orders', oauth.authorise(), (req, res, next) => {
   });
 });
 
+
+
+router.post('/product/update', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  var total=req.body.total;
+  var list=req.body.list;
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+
+   client.query('BEGIN;');
+    // SQL Query > Insert Data
+    // client.query('UPDATE employee_master SET cm_code=$1, cm_name=$2, cm_mobile=$3, cm_email=$4, cm_address=$5, cm_city=$6, cm_state=$7, cm_pin_code=$8, cm_car_name=$9, cm_car_model=$10, cm_car_number=$11 where cm_id=$12',[req.body.cm_code,req.body.cm_name,req.body.cm_mobile,req.body.cm_email,req.body.cm_address,req.body.cm_city,req.body.cm_state,req.body.cm_pin_code,req.body.cm_car_name,req.body.cm_car_model,req.body.cm_car_number,id]);
+    // SQL Query > Select Data
+    if(list.opm_quantity != list.opm_quantity_old){
+    var singleInsert = "UPDATE order_product_master SET opm_quantity=$1,opm_total=$2,opm_status_type='update' WHERE opm_id=$3 RETURNING *",
+    params = [list.opm_quantity,list.opm_quantity*list.opm_rate,list.opm_id];
+    client.query(singleInsert, params, function (error, result) {
+        results.push(result.rows[0]); // Will contain your inserted rows
+        client.query("UPDATE order_master SET om_amount=$1 WHERE om_id=$2",[total,list.om_id]);
+        client.query('COMMIT;');
+        done();
+        return res.json(results);
+    });
+  }
+  else{
+    return res.end("Successfully."); 
+  }
+  done(err);
+  });
+});
+
+router.post('/product/cancel', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  var total=req.body.total;
+  var list=req.body.list;
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+
+   client.query('BEGIN;');
+    // SQL Query > Insert Data
+    // client.query('UPDATE employee_master SET cm_code=$1, cm_name=$2, cm_mobile=$3, cm_email=$4, cm_address=$5, cm_city=$6, cm_state=$7, cm_pin_code=$8, cm_car_name=$9, cm_car_model=$10, cm_car_number=$11 where cm_id=$12',[req.body.cm_code,req.body.cm_name,req.body.cm_mobile,req.body.cm_email,req.body.cm_address,req.body.cm_city,req.body.cm_state,req.body.cm_pin_code,req.body.cm_car_name,req.body.cm_car_model,req.body.cm_car_number,id]);
+    // SQL Query > Select Data
+    
+    var singleInsert = "UPDATE order_product_master SET opm_quantity=0,opm_total=0,opm_status_type='cancel' WHERE opm_id=$1 RETURNING *",
+    params = [list.opm_id];
+    client.query(singleInsert, params, function (error, result) {
+        results.push(result.rows[0]); // Will contain your inserted rows
+        client.query("UPDATE order_master SET om_amount=$1 WHERE om_id=$2",[total,list.om_id]);
+        client.query('COMMIT;');
+        done();
+        return res.json(results);
+
+    });
+  
+  done(err);
+  });
+});
+
 module.exports = router;

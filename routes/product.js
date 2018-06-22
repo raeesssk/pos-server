@@ -185,6 +185,27 @@ router.post('/edit/:productId', oauth.authorise(), (req, res, next) => {
   const results = [];
   const id = req.params.productId;
   const product = req.body.product;
+  var Storage = multer.diskStorage({
+      destination: function (req, file, callback) {
+          // callback(null, "./images");
+            callback(null, '../pos/resources/assets/img/allimages');
+            
+      },
+      filename: function (req, file, callback) {
+          var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
+          filenamestore = "../resources/assets/img"+fi;
+          callback(null, fi);
+      }
+  });
+
+  var upload = multer({ storage: Storage }).array("imgUploader"); 
+  
+  upload(req, res, function (err) { 
+    if (err) { 
+        return res.end("Something went wrong!"+err); 
+    } 
+     
+  });
   pool.connect(function(err, client, done){
     if(err) {
       done();
@@ -195,7 +216,7 @@ router.post('/edit/:productId', oauth.authorise(), (req, res, next) => {
     client.query('BEGIN;');
     
     var singleInsert = 'update product_master set pm_description=$1, pm_ctm_id=$2, pm_rate=$3, pm_quantity=$4, pm_image=$5, pm_updated_at=now() where pm_id=$6 RETURNING *',
-        params = [product.pm_description,product.pm_ctm.ctm_id,product.pm_rate,product.pm_quantity,req.body.image,id];
+        params = [product.pm_description,product.pm_ctm.ctm_id,product.pm_rate,product.pm_quantity,filenamestore,id];
     client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
         
