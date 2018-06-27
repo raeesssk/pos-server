@@ -269,4 +269,70 @@ router.post('/product/cancel', oauth.authorise(), (req, res, next) => {
   });
 });
 
+router.post('/order/total', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const str = "%"+req.body.search+"%";
+
+    const strqry =  "SELECT count(om.om_id) as total "+
+                    "FROM order_master om "+
+                    "LEFT OUTER JOIN customer_master cm on om.om_cm_id = cm.cm_id "+
+                    "LEFT OUTER JOIN table_master tm on om.om_tm_id = tm.tm_id "+
+                    "LEFT OUTER JOIN area_master am on tm.tm_am_id=am.am_id "+
+                    "where om.om_status=0 "+
+                    "and LOWER(om_no||''||tm_description||''||am_name||''||om_amount||''||om_status_type) LIKE LOWER($1);";
+      console.log(str);
+    const query = client.query(strqry,[str]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+    done(err);
+  });
+});
+
+router.post('/order/limit', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const str = "%"+req.body.search+"%";
+
+    const strqry =  "SELECT * "+
+                    "FROM order_master om "+
+                    "LEFT OUTER JOIN customer_master cm on om.om_cm_id = cm.cm_id "+
+                    "LEFT OUTER JOIN table_master tm on om.om_tm_id = tm.tm_id "+
+                    "LEFT OUTER JOIN area_master am on tm.tm_am_id=am.am_id "+
+                    "where om.om_status=0 "+
+                    "and LOWER(om_no||''||tm_description||''||am_name||''||om_amount||''||om_status_type) LIKE LOWER($1) "+
+                    "order by om.om_id desc LIMIT $2 OFFSET $3";
+
+    // SQL Query > Select Data
+    const query = client.query(strqry,[ str, req.body.number, req.body.begin]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+    done(err);
+  });
+});
+
 module.exports = router;
