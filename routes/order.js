@@ -282,7 +282,6 @@ router.post('/order/total', oauth.authorise(), (req, res, next) => {
 
     const strqry =  "SELECT count(om.om_id) as total "+
                     "FROM order_master om "+
-                    "LEFT OUTER JOIN customer_master cm on om.om_cm_id = cm.cm_id "+
                     "LEFT OUTER JOIN table_master tm on om.om_tm_id = tm.tm_id "+
                     "LEFT OUTER JOIN area_master am on tm.tm_am_id=am.am_id "+
                     "where om.om_status=0 "+
@@ -314,7 +313,6 @@ router.post('/order/limit', oauth.authorise(), (req, res, next) => {
 
     const strqry =  "SELECT * "+
                     "FROM order_master om "+
-                    "LEFT OUTER JOIN customer_master cm on om.om_cm_id = cm.cm_id "+
                     "LEFT OUTER JOIN table_master tm on om.om_tm_id = tm.tm_id "+
                     "LEFT OUTER JOIN area_master am on tm.tm_am_id=am.am_id "+
                     "where om.om_status=0 "+
@@ -334,5 +332,59 @@ router.post('/order/limit', oauth.authorise(), (req, res, next) => {
     done(err);
   });
 });
+
+router.post('/order/status', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+
+   client.query('BEGIN;');
+    // SQL Query > Insert Data
+    // client.query('UPDATE employee_master SET cm_code=$1, cm_name=$2, cm_mobile=$3, cm_email=$4, cm_address=$5, cm_city=$6, cm_state=$7, cm_pin_code=$8, cm_car_name=$9, cm_car_model=$10, cm_car_number=$11 where cm_id=$12',[req.body.cm_code,req.body.cm_name,req.body.cm_mobile,req.body.cm_email,req.body.cm_address,req.body.cm_city,req.body.cm_state,req.body.cm_pin_code,req.body.cm_car_name,req.body.cm_car_model,req.body.cm_car_number,id]);
+    // SQL Query > Select Data
+    var singleInsert = "UPDATE order_master SET om_status_type='closed' WHERE om_id=($1) RETURNING *",
+        params = [req.body.om_id];
+       
+    client.query(singleInsert, params, function (error, result) {
+        results.push(result.rows[0]); // Will contain your inserted rows
+        client.query("SELECT * from order_master om INNER JOIN customer_master cm on om.om_cm_id=cm.cm_id WHERE om_status_type='closed'");
+        client.query('COMMIT;');
+        done();
+        return res.json(results);
+    });
+  done(err);
+  });
+});
+
+router.post('/complete', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  var list=req.body;
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const query = client.query("SELECT * FROM order_product_master opm INNER JOIN order_master om on opm.opm_om_id = om.om_id INNER JOIN product_master pm on opm.opm_pm_id=pm.pm_id where om_id=$1",[list.om_id]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => { 
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+  done(err);
+  });
+});
+
+
+
 
 module.exports = router;

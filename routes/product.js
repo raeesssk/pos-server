@@ -318,4 +318,26 @@ router.post('/product/limit', oauth.authorise(), (req, res, next) => {
   });
 });
 
+router.post('/recipe', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  var list=req.body;
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const query = client.query("SELECT * FROM recipe_master rm INNER JOIN product_master pm on rm.rm_pm_id = pm.pm_id INNER JOIN category_master ctm on pm.pm_ctm_id=ctm.ctm_id INNER JOIN inventory_master im on rm.rm_im_id = im.im_id INNER JOIN unit_master um on im.im_um_id = um.um_id where pm_id=$1",[list.pm_id]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => { 
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+  done(err);
+  });
+});
 module.exports = router;
