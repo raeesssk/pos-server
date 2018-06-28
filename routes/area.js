@@ -18,6 +18,7 @@ router.get('/', oauth.authorise(), (req, res, next) => {
     }
     const query = client.query("SELECT * FROM area_master where am_status = 0 order by am_id desc");
     query.on('row', (row) => {
+      
       results.push(row);
     });
     query.on('end', () => {

@@ -32,6 +32,7 @@ var emailsent = require('./routes/emailsent');
 var backup = require('./routes/backup');
 var order= require('./routes/order');
 var kitchen=require('./routes/kitchen');
+var takeaway=require('./routes/takeaway');
 var pmx = require('pmx').init({
   http          : true, // HTTP routes logging (default: true)
   ignore_routes : [/socket\.io/, /notFound/], // Ignore http routes with this pattern (Default: [])
@@ -81,6 +82,7 @@ app.use('/emailsent', emailsent);
 app.use('/backup', backup);
 app.use('/order',order);
 app.use('/kitchen',kitchen);
+app.use('/takeaway',takeaway);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   var err = new Error('Not Found');
