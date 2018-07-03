@@ -7,7 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('pos-server:server');
 var http = require('http');
-
+var socket= require('socket.io');
 /**
  * Get port from environment and store in Express.
  */
@@ -24,10 +24,42 @@ var server = http.createServer(app);
 /**
  * Listen on provided port, on all network interfaces.
  */
+ 
 
 server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
+
+var io = socket(server);
+
+io.on('connection', function(socket){
+  console.log(socket.id);
+
+  socket.on('deleteshow',function(data){
+    io.sockets.emit('deleteshow',data);
+  });
+  socket.on('booktable',function(data){
+    io.sockets.emit('booktable',data);
+  });
+  socket.on('orderPlace',function(data){
+    io.sockets.emit('orderPlace',data);
+  });
+  socket.on('order-update',function(data){
+    io.sockets.emit('order-update',data);
+  });
+  socket.on('order-complete',function(data){
+    io.sockets.emit('order-complete',data);
+  });
+  socket.on('remove-reserve',function(data){
+    io.sockets.emit('remove-reserve',data);
+  });
+  socket.on('takeaway',function(data){
+    io.sockets.emit('takeaway',data);
+  });
+  socket.on('changeTable',function(data){
+    io.sockets.emit('changeTable',data);
+  });
+});
 
 /**
  * Normalize a port into a number, string, or false.

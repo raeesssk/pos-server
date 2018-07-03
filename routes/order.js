@@ -167,7 +167,6 @@ router.post('/placeorder', oauth.authorise(), (req, res, next) => {
     });
       var singleInsert = 'UPDATE order_master SET om_amount=om_amount + $1 WHERE om_id=$2 RETURNING *',
       params=[order.om_total,order.om_id]
-      console.log(req.body.opm_total);
       client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
         
