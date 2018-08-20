@@ -75,6 +75,8 @@ model.saveAccessToken = function (token, clientId, expires, userId, callback) {
  */
 model.getUser = function (username, password, callback) {
   console.log("getUser");
+  console.log(username);
+
   var id = null;
   pool.connect(function(err, client, done){
     const query = client.query('select id from users where  username = $1 and password = $2', [username,password]);

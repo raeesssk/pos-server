@@ -181,7 +181,7 @@ router.post('/placeorder', oauth.authorise(), (req, res, next) => {
 
 router.post('/ongoing/orders', oauth.authorise(), (req, res, next) => {
   const results = [];
-
+  console.log(req.body)
   pool.connect(function(err, client, done){
     if(err) {
       done();
@@ -202,7 +202,28 @@ router.post('/ongoing/orders', oauth.authorise(), (req, res, next) => {
   });
 });
 
-
+router.get('/ongoin/orders/:omId', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  const id=req.params.omId
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const query = client.query("SELECT * FROM order_product_master opm INNER JOIN order_master om on opm.opm_om_id = om.om_id INNER JOIN product_master pm on opm.opm_pm_id=pm.pm_id INNER JOIN table_master tm on om.om_tm_id=tm.tm_id INNER JOIN area_master am on tm.tm_am_id=am.am_id where om_tm_id=$1",[id]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => { 
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+  done(err);
+  });
+});
 
 router.post('/product/update', oauth.authorise(), (req, res, next) => {
   const results = [];
@@ -215,7 +236,7 @@ router.post('/product/update', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-
+ 
    client.query('BEGIN;');
     // SQL Query > Insert Data
     // client.query('UPDATE employee_master SET cm_code=$1, cm_name=$2, cm_mobile=$3, cm_email=$4, cm_address=$5, cm_city=$6, cm_state=$7, cm_pin_code=$8, cm_car_name=$9, cm_car_model=$10, cm_car_number=$11 where cm_id=$12',[req.body.cm_code,req.body.cm_name,req.body.cm_mobile,req.body.cm_email,req.body.cm_address,req.body.cm_city,req.body.cm_state,req.body.cm_pin_code,req.body.cm_car_name,req.body.cm_car_model,req.body.cm_car_number,id]);
@@ -409,7 +430,6 @@ router.post('/order/cancel', oauth.authorise(), (req, res, next) => {
     query.on('end', () => { 
       done();
 
-        console.log(results.length);
       if(results.length == 0){
         var singleInsert = "UPDATE order_master SET om_status_type='cancel' WHERE om_id=$1 RETURNING *",
         params = [req.body.om_id];
