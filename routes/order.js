@@ -189,7 +189,7 @@ router.post('/ongoing/orders', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    const query = client.query("SELECT * FROM order_product_master opm INNER JOIN order_master om on opm.opm_om_id = om.om_id INNER JOIN product_master pm on opm.opm_pm_id=pm.pm_id INNER JOIN table_master tm on om.om_tm_id=tm.tm_id INNER JOIN area_master am on tm.tm_am_id=am.am_id where om_id=$1",[req.body.om_id]);
+    const query = client.query("SELECT * FROM order_product_master opm INNER JOIN order_master om on opm.opm_om_id = om.om_id INNER JOIN product_master pm on opm.opm_pm_id=pm.pm_id INNER JOIN table_master tm on om.om_tm_id=tm.tm_id INNER JOIN area_master am on tm.tm_am_id=am.am_id where om_status_type like 'open' and om_id=$1",[req.body.om_id]);
     query.on('row', (row) => {
       results.push(row);
     });
