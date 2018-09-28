@@ -79,7 +79,7 @@ model.getUser = function (username, password, callback) {
 
   var id = null;
   pool.connect(function(err, client, done){
-    const query = client.query('select id from users where  username = $1 and password = $2', [username,encryption.decrypt(password)]);
+    const query = client.query('select id from users where  username = $1 and password = $2', [username,password]);
     
     query.on('row', (row) => {
       id = row.id;
