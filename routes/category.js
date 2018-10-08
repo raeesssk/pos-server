@@ -239,4 +239,36 @@ router.post('/category/limit', oauth.authorise(), (req, res, next) => {
     done(err);
   });
 });
+
+router.post('/typeahead/search', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const str = "%"+req.body.search+"%";
+    // SQL Query > Select Data
+
+    const strqry =  "SELECT ctm.ctm_id, ctm.ctm_type "+
+                    "FROM category_master ctm "+
+                    "where ctm.ctm_status = 0 "+
+                    "and LOWER(ctm_type) LIKE LOWER($1) "+
+                    "order by ctm.ctm_id desc LIMIT 10";
+
+    const query = client.query(strqry,[ str]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+    done(err);
+  });
+});
+
 module.exports = router;
