@@ -121,7 +121,7 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
         results.push(result.rows[0]); // Will contain your inserted rows
 
         productList.forEach(function(product, index) {
-            client.query('INSERT INTO public.product_price_master(ppm_pm_id, ppm_am_id, ppm_fullday_price, ppm_fullnight_price, pm_halfday_price, pm_halfnight_price)VALUES ($1, $2, $3, $4, $5, $6)',[result.rows[0].pm_id,product.am_id,product.ppm_fullday_price,product.ppm_fullnight_price,product.pm_halfday_price,product.pm_halfnight_price]);
+            client.query('INSERT INTO public.product_price_master(ppm_pm_id, ppm_am_id, ppm_fullday_price, ppm_fullnight_price, ppm_halfday_price, ppm_halfnight_price)VALUES ($1, $2, $3, $4, $5, $6)',[result.rows[0].pm_id,product.am_id,product.ppm_fullday_price,product.ppm_fullnight_price,product.ppm_halfday_price,product.ppm_halfnight_price]);
              
           });
 
