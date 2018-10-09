@@ -140,6 +140,7 @@ router.get('/:productId', oauth.authorise(), (req, res, next) => {
 router.post('/add', oauth.authorise(), (req, res, next) => {
   const results = [];
   const product = req.body.product;
+  const productList = req.body.productList;
   var Storage = multer.diskStorage({
       destination: function (req, file, callback) {
           // callback(null, "./images");
@@ -168,11 +169,19 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
+      client.query('BEGIN;');
 
-    var singleInsert = 'INSERT INTO product_master(pm_description, pm_ctm_id, pm_rate, pm_quantity, pm_image, pm_status) values($1,$2,$3,$4,$5,0) RETURNING *',
-        params = [product.pm_description,product.pm_ctm_id.ctm_id,product.pm_rate,product.pm_quantity,filenamestore]
+    var singleInsert = 'INSERT INTO product_master(pm_description, pm_ctm_id, pm_dish_no, pm_expected_in, pm_image, pm_status) values($1,$2,$3,$4,$5,0) RETURNING *',
+        params = [product.pm_description,product.pm_ctm_id.ctm_id,product.pm_dish_no,product.pm_expected_in,filenamestore]
     client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
+
+        productList.forEach(function(product, index) {
+            client.query('INSERT INTO public.product_price_master(ppm_pm_id, ppm_am_id, ppm_fullday_price, ppm_fullnight_price, pm_halfday_price, pm_halfnight_price)VALUES ($1, $2, $3, $4, $5, $6)',[result.rows[0].pm_id,product.am_id,product.ppm_fullday_price,product.ppm_fullnight_price,product.pm_halfday_price,product.pm_halfnight_price]);
+             
+          });
+
+            client.query('COMMIT;');
         done();
         return res.json(results);
     });
