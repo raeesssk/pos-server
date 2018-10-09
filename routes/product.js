@@ -8,57 +8,7 @@ var multer = require('multer');
 var filenamestore = "";
 
 
-router.post('/upload/file', oauth.authorise(), (req, res, next) => {
-
-
-  var Storage = multer.diskStorage({
-      destination: function (req, file, callback) {
-          // callback(null, "./images");
-            callback(null, '../pos/resources/assets/img/allimages');
-            
-      },
-      filename: function (req, file, callback) {
-          var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
-          filenamestore = "../resources/assets/img"+fi;
-          callback(null, fi);
-      }
-  });
-
-  var upload = multer({ storage: Storage }).array("imgUploader");
-  
-  upload(req, res, function (err) { 
-    if (err) { 
-        return res.end("Something went wrong!"+err); 
-    } 
-      return res.end("File uploaded sucessfully!.");
-    });
-
-});
-
-
 var pool = new pg.Pool(config);
-
-router.get('/', oauth.authorise(), (req, res, next) => {
-  const results = [];
-  pool.connect(function(err, client, done){
-    if(err) {
-      done();
-      // pg.end();
-      console.log("the error is"+err);
-      return res.status(500).json({success: false, data: err});
-    }
-    const query = client.query("SELECT *,ctm.ctm_type||' '||pm.pm_description ||' ('||pm.pm_quantity||')' as pm_search FROM product_master pm LEFT OUTER JOIN category_master ctm on pm.pm_ctm_id = ctm.ctm_id where pm_status = 0 order by pm_id desc");
-    query.on('row', (row) => {
-      results.push(row);
-    });
-    query.on('end', () => {
-      done();
-      // pg.end();
-      return res.json(results);
-    });
-    done(err);
-  });
-});
 
 router.post('/items', oauth.authorise(), (req, res, next) => {
   const results = [];
@@ -70,7 +20,7 @@ router.post('/items', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    const query = client.query("SELECT pm.pm_id,pm.pm_description,pm.pm_image,pm.pm_rate,pm.pm_quantity from product_master pm where pm_ctm_id=$1 order by pm_id ASC",[req.body.ctm_id]);
+    const query = client.query("SELECT pm.pm_id,pm.pm_description,pm.pm_image,pm.pm_dish_no,pm.pm_expected_in from product_master pm where pm_ctm_id=$1 order by pm_id ASC",[req.body.ctm_id]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -107,12 +57,9 @@ router.get('/:productId', oauth.authorise(), (req, res, next) => {
   });
 });
 
-/*router.post('/add', oauth.authorise(), (req, res, next) => {
+router.get('/price/:productId', oauth.authorise(), (req, res, next) => {
   const results = [];
-
-  const image = req.body.image;
-  const product = req.body.product;
-  
+  const id = req.params.productId;
   pool.connect(function(err, client, done){
     if(err) {
       done();
@@ -120,11 +67,8 @@ router.get('/:productId', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    // SQL Query > Insert Data
-    client.query('INSERT INTO product_master(pm_description, pm_ctm_id, pm_rate, pm_quantity, pm_username, pm_image, pm_status) values($1,$2,$3,$4,$5,$6,0)',[product.pm_description,product.pm_ctm_id.ctm_id,product.pm_rate,product.pm_quantity,product.pm_username,image]);
-    
-	// SQL Query > Select Data
-    const query = client.query('SELECT * FROM product_master');
+    // SQL Query > Select Data
+    const query = client.query('SELECT * FROM product_price_master ppm INNER JOIN product_master pm on ppm.ppm_pm_id = pm.pm_id INNER JOIN area_master am on ppm.ppm_am_id=am.am_id where pm.pm_id=$1',[id]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -135,33 +79,33 @@ router.get('/:productId', oauth.authorise(), (req, res, next) => {
     });
     done(err);
   });
-});*/
+});
 
 router.post('/add', oauth.authorise(), (req, res, next) => {
   const results = [];
   const product = req.body.product;
   const productList = req.body.productList;
-  var Storage = multer.diskStorage({
-      destination: function (req, file, callback) {
-          // callback(null, "./images");
-            callback(null, '../pos/resources/assets/img/allimages');
+  // var Storage = multer.diskStorage({
+  //     destination: function (req, file, callback) {
+  //         // callback(null, "./images");
+  //           callback(null, '../pos/resources/assets/img/allimages');
             
-      },
-      filename: function (req, file, callback) {
-          var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
-          filenamestore = "../resources/assets/img"+fi;
-          callback(null, fi);
-      }
-  });
+  //     },
+  //     filename: function (req, file, callback) {
+  //         var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
+  //         filenamestore = "../resources/assets/img"+fi;
+  //         callback(null, fi);
+  //     }
+  // });
 
-  var upload = multer({ storage: Storage }).array("imgUploader"); 
+  // var upload = multer({ storage: Storage }).array("imgUploader"); 
   
-  upload(req, res, function (err) { 
-    if (err) { 
-        return res.end("Something went wrong!"+err); 
-    } 
+  // upload(req, res, function (err) { 
+  //   if (err) { 
+  //       return res.end("Something went wrong!"+err); 
+  //   } 
      
-  });
+  // });
   pool.connect(function(err, client, done){
     if(err) {
       done();
@@ -194,27 +138,27 @@ router.post('/edit/:productId', oauth.authorise(), (req, res, next) => {
   const results = [];
   const id = req.params.productId;
   const product = req.body.product;
-  var Storage = multer.diskStorage({
-      destination: function (req, file, callback) {
-          // callback(null, "./images");
-            callback(null, '../pos/resources/assets/img/allimages');
+  // var Storage = multer.diskStorage({
+  //     destination: function (req, file, callback) {
+  //         // callback(null, "./images");
+  //           callback(null, '../pos/resources/assets/img/allimages');
             
-      },
-      filename: function (req, file, callback) {
-          var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
-          filenamestore = "../resources/assets/img"+fi;
-          callback(null, fi);
-      }
-  });
+  //     },
+  //     filename: function (req, file, callback) {
+  //         var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
+  //         filenamestore = "../resources/assets/img"+fi;
+  //         callback(null, fi);
+  //     }
+  // });
 
-  var upload = multer({ storage: Storage }).array("imgUploader"); 
+  // var upload = multer({ storage: Storage }).array("imgUploader"); 
   
-  upload(req, res, function (err) { 
-    if (err) { 
-        return res.end("Something went wrong!"+err); 
-    } 
+  // upload(req, res, function (err) { 
+  //   if (err) { 
+  //       return res.end("Something went wrong!"+err); 
+  //   } 
      
-  });
+  // });
   pool.connect(function(err, client, done){
     if(err) {
       done();
@@ -280,7 +224,7 @@ router.post('/product/total', oauth.authorise(), (req, res, next) => {
                     "FROM product_master pm "+
                     "LEFT OUTER JOIN category_master cm on pm.pm_ctm_id = cm.ctm_id "+
                     "where pm.pm_status=0 "+
-                    "and LOWER(pm_description||''||pm_ctm_id) LIKE LOWER($1);";
+                    "and LOWER(pm_description||''||pm_dish_no) LIKE LOWER($1);";
 
     const query = client.query(strqry,[str]);
     query.on('row', (row) => {
@@ -310,7 +254,7 @@ router.post('/product/limit', oauth.authorise(), (req, res, next) => {
                     "FROM product_master pm "+
                     "LEFT OUTER JOIN category_master cm on pm.pm_ctm_id = cm.ctm_id "+
                     "where pm.pm_status=0 "+
-                    "and LOWER(pm_description||''||pm_ctm_id) LIKE LOWER($1) "+
+                    "and LOWER(pm_description||''||pm_dish_no) LIKE LOWER($1) "+
                     "order by pm.pm_id desc LIMIT $2 OFFSET $3";
 
     // SQL Query > Select Data
