@@ -34,6 +34,7 @@ var order= require('./routes/order');
 var kitchen=require('./routes/kitchen');
 var takeaway=require('./routes/takeaway');
 var signup = require('./routes/signup');
+var corporate = require('./routes/corporate');
 
 var pmx = require('pmx').init({
   http          : true, // HTTP routes logging (default: true)
@@ -86,6 +87,7 @@ app.use('/order',order);
 app.use('/kitchen',kitchen);
 app.use('/takeaway',takeaway);
 app.use('/signup',signup);
+app.use('/corporate',corporate);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   var err = new Error('Not Found');
