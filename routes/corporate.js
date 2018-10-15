@@ -113,8 +113,8 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
         return res.status(500).json({success: false, data: err});
       }
 
-      var singleInsert = 'INSERT INTO corporate_master(scm_corp_name,scm_country,scm_address,scm_landmark,scm_area,scm_city,scm_pincode,scm_state,scm_currency,scm_contact_name,scm_contact_no,scm_email,scm_image,scm_user_id) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *',
-          params = [req.body.scm_corp_name,req.body.scm_country,req.body.scm_address,req.body.scm_landmark,req.body.scm_area,req.body.scm_city,req.body.scm_pincode,req.body.scm_state,req.body.scm_currency,req.body.scm_contact_name,req.body.scm_contact_no,req.body.scm_email,filenamestore,req.body.scm_user_id]
+      var singleInsert = 'INSERT INTO corporate_master(scm_corp_name,scm_country,scm_address,scm_landmark,scm_area,scm_city,scm_pincode,scm_state,scm_currency,scm_contact_name,scm_contact_no,scm_email,scm_image) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *',
+          params = [req.body.scm_corp_name,req.body.scm_country,req.body.scm_address,req.body.scm_landmark,req.body.scm_area,req.body.scm_city,req.body.scm_pincode,req.body.scm_state,req.body.scm_currency,req.body.scm_contact_name,req.body.scm_contact_no,req.body.scm_email,filenamestore]
       client.query(singleInsert, params, function (error, result) {
           results.push(result.rows[0]); // Will contain your inserted rows
           done();
