@@ -11,9 +11,9 @@ var filenamestore = "";
 
 var pool = new pg.Pool(config);
 
-router.get('/:uId', oauth.authorise(), (req, res, next) => {
+router.get('/:csmId', oauth.authorise(), (req, res, next) => {
   const results = [];
-  const id = req.params.uId;
+  const id = req.params.csmId;
   pool.connect(function(err, client, done){
     if(err) {
       done();
@@ -21,7 +21,7 @@ router.get('/:uId', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    const query = client.query("SELECT * FROM corporate_master where scm_status = 0 and scm_user_id=$1",[id]);
+    const query = client.query("SELECT * FROM restaurant_master where srm_status = 0 and srm_scm_id=$1",[id]);
     query.on('row', (row) => {
       
       results.push(row);
