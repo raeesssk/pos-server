@@ -30,6 +30,30 @@ router.get('/', oauth.authorise(), (req, res, next) => {
   });
 });
 
+router.get('/restaurant/:srmId', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  const id = req.params.srmId;
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    // SQL Query > Select Data
+    const query = client.query('SELECT * FROM area_master where am_srm_id=$1',[id]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+  done(err);
+  });
+});
+
 router.get('/:ctmId', oauth.authorise(), (req, res, next) => {
   const results = [];
   const id = req.params.ctmId;
@@ -89,8 +113,8 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
       return res.status(500).json({success: false, data: err});
     }
 
-    var singleInsert = 'INSERT INTO area_master(am_name,am_username,am_status) values($1,$2,0) RETURNING *',
-        params = [req.body.am_name,req.body.am_username]
+    var singleInsert = 'INSERT INTO area_master(am_name,am_srm_id) values($1,$2) RETURNING *',
+        params = [req.body.am_name,req.body.am_srm_id]
     client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
         done();
