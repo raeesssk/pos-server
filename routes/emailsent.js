@@ -3,39 +3,119 @@ var nodemailer = require('nodemailer');
 var router = express.Router();
 var oauth = require('../oauth/index');
 var http = require('http');
+var async = require('async');
+var crypto = require('crypto');
+var pg = require('pg');
+var path = require('path');
+var config = require('../config.js');
+var encryption = require('../commons/encryption.js');
+var pwdExpires = 0;
+var pool = new pg.Pool(config);
 
-router.post('/', oauth.authorise(), (req, res, next) => {
+router.post('/', function(req, res, next) {
+  const results = [];
+  
+  async.waterfall([
+    function(done) {
+      crypto.randomBytes(20, function(err, buf) {
+        var token = buf.toString('hex');
+        done(err, token);
+      });
+    },
+    function(token, user, done) {
+      let transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true, // secure:true for port 465, secure:false for port 587
+        auth: {
+          user: '3commastech@gmail.com',
+          pass: 'abcd@1237#'
+        }
+      });
+      let mailOptions = {
+        to: req.body.email,
+        from: '3commastech@gmail.com',
+        subject: 'Restromaticz User Password Reset',
+        text: 'You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n' +
+          'Please click on the following link, or paste this into your browser to complete the process:\n\n' +
+          'http://' + 'unitech.3commastechnologies.com' + '/pos/reset.html?token=' + token + '\n\n' +
+          'If you did not request this, please ignore this email and your password will remain unchanged.\n'
+      };
+       transporter.sendMail(mailOptions, (error, info) => {
+        console.log()
+        if (error) {
+            console.log(error);
+            return res.end(error);
+        }
+        console.log('Message %s sent: %s');
+        var id = req.body.email;
+        var email = JSON.parse(id);
+        pool.connect(function(err, client, done){
+        if(err) {
+        done();
+        // pg.end();
+        console.log("the error is"+err);
+        return res.status(500).json({success: false, data: err});
+        }
 
-  let transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true, // secure:true for port 465, secure:false for port 587
-      auth: {
-          user: 'raees.shaikh241@gmail.com',
-          pass: 'a1b2c3d4$'
-      }
+        var singleInsert = "INSERT INTO tokens(email_id,reset_tokens,token_expires) values($1,$2,now() + interval '10 minutes') RETURNING *",
+          params = [email,token]
+          console.log(params);
+          client.query(singleInsert, params, function (error, result) {
+            results.push(result.rows[0]); // Will contain your inserted rows
+            //done();
+          });
+        done(err);
+      });
+        return res.end();
+
+      });
+    }
+  ], function(err) {
+    if (err) return next(err);
   });
+});
 
-  // setup email data with unicode symbols
-  let mailOptions = {
-      from: '"Green Air" <raees.shaikh241@gmail.com>', // sender address
-      to: req.body.recipient, // list of receivers
-      subject: req.body.subj, // Subject line
-      // text: 'Hello world ?', // plain text body
-      html: req.body.message // html body
-  };
+router.post('/reset/:tokenId',  (req, res, next) => {
+  const results = [];
 
-  // send mail with defined transport object
-  transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-          console.log(error);
-          return res.end(error);
+  const id = req.params.tokenId;
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      done(err);
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    // SQL Query > Select Data
+    const query = client.query("SELECT * FROM tokens where reset_tokens=$1",[id]);
+    query.on('row', (row) => {
+      results.push(row);
+      console.log(results);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      var d = Date.now();
+      if(results.length > 0 && d < results[0].token_expires )
+      {
+        var singleInsert = "update users set password=$1 where username=$2 RETURNING *",
+          params = [encryption.encrypt(req.body.password),results[0].email_id]
+          console.log(params);
+          client.query(singleInsert, params, function (error, result) {
+           // Will contain your inserted rows
+          done();
+          return res.json(result);
+        });
       }
-      console.log('Message %s sent: %s', info.messageId, info.response);
-      return res.end();
-
+      else
+      {
+        return res.send('Token not Found');
+      }
+    });
+    
+    done(err);
   });
-
 });
 
 module.exports = router;
