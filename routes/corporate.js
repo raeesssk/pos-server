@@ -128,30 +128,48 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
 });
 
 
-router.post('/edit/:ctmId', oauth.authorise(), (req, res, next) => {
+router.post('/edit/:scmId', oauth.authorise(), (req, res, next) => {
   const results = [];
-  const id = req.params.ctmId;
-  pool.connect(function(err, client, done){
-    if(err) {
-      done();
-      // pg.end();
-      console.log("the error is"+err);
-      return res.status(500).json({success: false, data: err});
-    }
 
-    client.query('BEGIN;');
-
-    var singleInsert = 'UPDATE area_master SET am_name=$1, am_updated_at=now() where am_id=$2 RETURNING *',
-        params = [req.body.am_name,id]
-    client.query(singleInsert, params, function (error, result) {
-        results.push(result.rows[0]); // Will contain your inserted rows
-        done();
-        client.query('COMMIT;');
-        return res.json(results);
-    });
-
-    done(err);
+  const id = req.params.scmId;
+  var Storage = multer.diskStorage({
+      destination: function (req, file, callback) {
+          // callback(null, "./images");
+            callback(null, "../nginx/html/images");
+      },
+      filename: function (req, file, callback) {
+          var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
+          filenamestore = "../images/"+fi;
+          callback(null, fi);
+      }
   });
+
+  var upload = multer({ storage: Storage }).array("scm_image"); 
+
+  upload(req, res, function (err) { 
+    if (err) { 
+        return res.end("Something went wrong!"+err); 
+    } 
+    
+    pool.connect(function(err, client, done){
+      if(err) {
+        done();
+        // pg.end();
+        console.log("the error is"+err);
+        return res.status(500).json({success: false, data: err});
+      }
+
+      var singleInsert = 'update corporate_master set scm_corp_name=$1,scm_country=$2,scm_address=$3,scm_landmark=$4,scm_area=$5,scm_city=$6,scm_pincode=$7,scm_state=$8,scm_currency=$9,scm_contact_name=$10,scm_contact_no=$11,scm_email=$12,scm_image=$13, scm_updated_at=now() where scm_id=$14  RETURNING *',
+          params = [req.body.scm_corp_name,req.body.scm_country,req.body.scm_address,req.body.scm_landmark,req.body.scm_area,req.body.scm_city,req.body.scm_pincode,req.body.scm_state,req.body.scm_currency,req.body.scm_contact_name,req.body.scm_contact_no,req.body.scm_email,filenamestore,id]
+      client.query(singleInsert, params, function (error, result) {
+          results.push(result.rows[0]); // Will contain your inserted rows
+          done();
+          return res.json(results);
+      });
+
+      done(err);
+    });
+  }); 
 });
 
 
