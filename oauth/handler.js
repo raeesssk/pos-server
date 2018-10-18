@@ -5,7 +5,7 @@ var pg = require('pg');
 var config = require('../config.js');
 // var connectionString = process.env.DATABASE_URL || 'postgres://postgres:zeartech@localhost:5432/orientfurniture';
 
-// var Crypt = require('../commons/encryption');
+var encryption = require('../commons/encryption.js');
 
 var pool = new pg.Pool(config);
 //
@@ -79,7 +79,7 @@ model.getUser = function (username, password, callback) {
 
   var id = null;
   pool.connect(function(err, client, done){
-    const query = client.query('select id from users where  username = $1 and password = $2', [username,password]);
+    const query = client.query('select id from users where  username = $1 and password = $2', [username,encryption.encrypt(password)]);
     
     query.on('row', (row) => {
       id = row.id;

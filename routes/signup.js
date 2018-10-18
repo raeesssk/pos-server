@@ -3,6 +3,7 @@ var router = express.Router();
 var oauth = require('../oauth/index');
 var pg = require('pg');
 var path = require('path');
+var encryption = require('../commons/encryption.js');
 var config = require('../config.js');
 
 var pool = new pg.Pool(config);
@@ -18,7 +19,7 @@ router.post('/', (req, res, next) => {
     }
 
     var singleInsert = 'INSERT INTO users(username,password) values($1,$2) RETURNING *',
-        params = [req.body.email,req.body.conpassword]
+        params = [req.body.email,encryption.encrypt(req.body.conpassword)]
     client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
         done();

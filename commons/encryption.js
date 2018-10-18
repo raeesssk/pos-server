@@ -7,11 +7,6 @@ var urlAlgorithm = 'aes-256-ctr';
 var urlPassword = 'd6F3Efeq';
 
 
-model.hash = function (text) {
-
-    return crypto.createHash(algorithm, key).update(text).digest('hex');
-}
-
 model.encrypt = function (text){
     var cipher = crypto.createCipher(urlAlgorithm,urlPassword)
     var crypted = cipher.update(text,'utf8','hex')
@@ -20,7 +15,6 @@ model.encrypt = function (text){
 }
 
 model.decrypt = function (text){
-
     var decipher = crypto.createDecipher(urlAlgorithm,urlPassword)
     var dec = decipher.update(text,'hex','utf8')
     dec += decipher.final('utf8');
