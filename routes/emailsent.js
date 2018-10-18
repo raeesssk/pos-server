@@ -33,7 +33,7 @@ router.post('/', function(req, res, next) {
         }
       });
       let mailOptions = {
-        to: req.body.email,
+        to: req.body.username,
         from: '3commastech@gmail.com',
         subject: 'Restromaticz User Password Reset',
         text: 'You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n' +
@@ -48,7 +48,7 @@ router.post('/', function(req, res, next) {
             return res.end(error);
         }
         console.log('Message %s sent: %s');
-        var id = req.body.email;
+        var id = req.body.username;
         var email = JSON.parse(id);
         pool.connect(function(err, client, done){
         if(err) {
