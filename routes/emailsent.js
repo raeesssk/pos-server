@@ -47,28 +47,24 @@ router.post('/', function(req, res, next) {
             console.log(error);
             return res.end(error);
         }
-        console.log('Message %s sent: %s');
-        var id = req.body.username;
-        var email = JSON.parse(id);
+
         pool.connect(function(err, client, done){
-        if(err) {
-        done();
-        // pg.end();
-        console.log("the error is"+err);
-        return res.status(500).json({success: false, data: err});
-        }
+          if(err) {
+          done();
+          // pg.end();
+          console.log("the error is"+err);
+          return res.status(500).json({success: false, data: err});
+          }
 
-        var singleInsert = "INSERT INTO tokens(email_id,reset_tokens,token_expires) values($1,$2,now() + interval '10 minutes') RETURNING *",
-          params = [email,token]
-          console.log(params);
-          client.query(singleInsert, params, function (error, result) {
-            results.push(result.rows[0]); // Will contain your inserted rows
-            //done();
-          });
-        done(err);
-      });
-        return res.end();
-
+          var singleInsert = "INSERT INTO tokens(email_id,reset_tokens,token_expires) values($1,$2,now() + interval '10 minutes') RETURNING *",
+            params = [req.body.username,token]
+            client.query(singleInsert, params, function (error, result) {
+              results.push(result.rows[0]); // Will contain your inserted rows
+              done();
+              return res.json(results);
+            });
+          done(err);
+        });
       });
     }
   ], function(err) {
