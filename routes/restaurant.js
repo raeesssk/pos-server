@@ -35,9 +35,9 @@ router.get('/:uId', oauth.authorise(), (req, res, next) => {
   });
 });
 
-router.get('/:ctmId', oauth.authorise(), (req, res, next) => {
+router.get('/:srmId', oauth.authorise(), (req, res, next) => {
   const results = [];
-  const id = req.params.ctmId;
+  const id = req.params.srmId;
   pool.connect(function(err, client, done){
     if(err) {
       done();
@@ -46,7 +46,7 @@ router.get('/:ctmId', oauth.authorise(), (req, res, next) => {
       return res.status(500).json({success: false, data: err});
     }
     // SQL Query > Select Data
-    const query = client.query('SELECT * FROM corporate_master where scm_id=$1',[id]);
+    const query = client.query('SELECT * FROM restaurant_master where srm_id=$1',[id]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -58,86 +58,98 @@ router.get('/:ctmId', oauth.authorise(), (req, res, next) => {
   done(err);
   });
 });
-
-/*router.post('/add', oauth.authorise(), (req, res, next) => {
-  const results = [];
-  pool.connect(function(err, client, done){
-    if(err) {
-      done();
-      // pg.end();
-      console.log("the error is"+err);
-      return res.status(500).json({success: false, data: err});
-    }
-    // SQL Query > Insert Data
-    client.query('INSERT INTO area_master(am_name, am_username, am_status) values($1,$2,0)',[req.body.am_name,req.body.am_username]);
-    // SQL Query > Select Data
-    const query = client.query('SELECT * FROM area_master');
-    query.on('row', (row) => {
-      results.push(row);
-    });
-    query.on('end', () => {
-      done();
-      // pg.end();
-      return res.json(results);
-    });
-  done(err);
-  });
-});*/
 
 router.post('/add', oauth.authorise(), (req, res, next) => {
   const results = [];
+  
+  var Storage = multer.diskStorage({
+      destination: function (req, file, callback) {
+          // callback(null, "./images");
+            callback(null, "../nginx/html/images");
+      },
+      filename: function (req, file, callback) {
+          var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
+          filenamestore = "../images/"+fi;
+          callback(null, fi);
+      }
+  });
+
+  var upload = multer({ storage: Storage }).array("srm_image"); 
+
+  upload(req, res, function (err) { 
+    if (err) { 
+        return res.end("Something went wrong!"+err); 
+    } 
+
+    pool.connect(function(err, client, done){
+      if(err) {
+        done();
+        // pg.end();
+        console.log("the error is"+err);
+        return res.status(500).json({success: false, data: err});
+      }
+
+      var singleInsert = 'INSERT INTO restaurant_master(srm_restaurant_name,srm_country,srm_address,srm_landmark,srm_area,srm_city,srm_pincode,srm_state,srm_currency,srm_contact_name,srm_contact_number,srm_email,srm_image,srm_user_id) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *',
+          params = [req.body.srm_restaurant_name,req.body.srm_country,req.body.srm_address,req.body.srm_landmark,req.body.srm_area,req.body.srm_city,req.body.srm_pincode,req.body.srm_state,req.body.srm_currency,req.body.srm_contact_name,req.body.srm_contact_number,req.body.srm_email,filenamestore,req.body.srm_user_id]
+      client.query(singleInsert, params, function (error, result) {
+          results.push(result.rows[0]); // Will contain your inserted rows
+          done();
+          return res.json(results);
+      });
+
+      done(err);
+    });
+  }); 
+});
+
+
+router.post('/edit/:srmId', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  const id = req.params.srmId;
+  var Storage = multer.diskStorage({
+      destination: function (req, file, callback) {
+          // callback(null, "./images");
+            callback(null, "../nginx/html/images");
+      },
+      filename: function (req, file, callback) {
+          var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
+          filenamestore = "../images/"+fi;
+          callback(null, fi);
+      }
+  });
+
+  var upload = multer({ storage: Storage }).array("srm_image"); 
+
+  upload(req, res, function (err) { 
+    if (err) { 
+        return res.end("Something went wrong!"+err); 
+    } 
     
-  pool.connect(function(err, client, done){
-    if(err) {
-      done();
-      // pg.end();
-      console.log("the error is"+err);
-      return res.status(500).json({success: false, data: err});
-    }
-
-    var singleInsert = 'INSERT INTO restaurant_master(srm_restaurant_name,srm_country,srm_address,srm_landmark,srm_area,srm_city,srm_pincode,srm_state,srm_currency,srm_contact_name,srm_contact_number,srm_email,srm_scm_id) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *',
-        params = [req.body.srm_restaurant_name,req.body.srm_country,req.body.srm_address,req.body.srm_landmark,req.body.srm_area,req.body.srm_city,req.body.srm_pincode,req.body.srm_state,req.body.srm_currency,req.body.srm_contact_name,req.body.srm_contact_number,req.body.srm_email,req.body.srm_scm_id]
-    client.query(singleInsert, params, function (error, result) {
-        results.push(result.rows[0]); // Will contain your inserted rows
+    pool.connect(function(err, client, done){
+      if(err) {
         done();
-        return res.json(results);
-    });
+        // pg.end();
+        console.log("the error is"+err);
+        return res.status(500).json({success: false, data: err});
+      }
 
-    done(err);
-  });
+      var singleInsert = 'update restaurant_master set srm_restaurant_name=$1,srm_country=$2,srm_address=$3,srm_landmark=$4,srm_area=$5,srm_city=$6,srm_pincode=$7,srm_state=$8,srm_currency=$9,srm_contact_name=$10,srm_contact_number=$11,srm_email=$12,srm_image=$13, srm_updated_at=now() where srm_id=$14  RETURNING *',
+          params = [req.body.srm_restaurant_name,req.body.srm_country,req.body.srm_address,req.body.srm_landmark,req.body.srm_area,req.body.srm_city,req.body.srm_pincode,req.body.srm_state,req.body.srm_currency,req.body.srm_contact_name,req.body.srm_contact_number,req.body.srm_email,filenamestore,id]
+      client.query(singleInsert, params, function (error, result) {
+          results.push(result.rows[0]); // Will contain your inserted rows
+          done();
+          return res.json(results);
+      });
+
+      done(err);
+    });
+  }); 
 });
 
 
-router.post('/edit/:ctmId', oauth.authorise(), (req, res, next) => {
+router.post('/delete/:srmId', oauth.authorise(), (req, res, next) => {
   const results = [];
-  const id = req.params.ctmId;
-  pool.connect(function(err, client, done){
-    if(err) {
-      done();
-      // pg.end();
-      console.log("the error is"+err);
-      return res.status(500).json({success: false, data: err});
-    }
-
-    client.query('BEGIN;');
-
-    var singleInsert = 'UPDATE area_master SET am_name=$1, am_updated_at=now() where am_id=$2 RETURNING *',
-        params = [req.body.am_name,id]
-    client.query(singleInsert, params, function (error, result) {
-        results.push(result.rows[0]); // Will contain your inserted rows
-        done();
-        client.query('COMMIT;');
-        return res.json(results);
-    });
-
-    done(err);
-  });
-});
-
-
-router.post('/delete/:ctmId', oauth.authorise(), (req, res, next) => {
-  const results = [];
-  const id = req.params.ctmId;
+  const id = req.params.srmId;
   pool.connect(function(err, client, done){
     if(err) {
       done();
