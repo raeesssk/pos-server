@@ -133,8 +133,8 @@ router.post('/edit/:srmId', oauth.authorise(), (req, res, next) => {
         return res.status(500).json({success: false, data: err});
       }
 
-      var singleInsert = 'update restaurant_master set srm_restaurant_name=$1,srm_country=$2,srm_address=$3,srm_landmark=$4,srm_area=$5,srm_city=$6,srm_pincode=$7,srm_state=$8,srm_currency=$9,srm_contact_name=$10,srm_contact_number=$11,srm_email=$12,srm_image=$13, srm_updated_at=now() where srm_id=$14  RETURNING *',
-          params = [req.body.srm_restaurant_name,req.body.srm_country,req.body.srm_address,req.body.srm_landmark,req.body.srm_area,req.body.srm_city,req.body.srm_pincode,req.body.srm_state,req.body.srm_currency,req.body.srm_contact_name,req.body.srm_contact_number,req.body.srm_email,filenamestore,id]
+      var singleInsert = 'update restaurant_master set srm_restaurant_name=$1,srm_country=$2,srm_address=$3,srm_landmark=$4,srm_area=$5,srm_city=$6,srm_pincode=$7,srm_state=$8,srm_currency=$9,srm_contact_name=$10,srm_contact_number=$11,srm_email=$12,srm_image=$13,srm_day_start_time=$14,srm_day_end_time=$15,srm_night_start_time=$16,srm_night_end_time=$17,srm_isnight=$18, srm_updated_at=now() where srm_id=$19  RETURNING *',
+          params = [req.body.srm_restaurant_name,req.body.srm_country,req.body.srm_address,req.body.srm_landmark,req.body.srm_area,req.body.srm_city,req.body.srm_pincode,req.body.srm_state,req.body.srm_currency,req.body.srm_contact_name,req.body.srm_contact_number,req.body.srm_email,filenamestore,req.body.srm_day_start_time,req.body.srm_day_end_time,req.body.srm_night_start_time,req.body.srm_night_end_time,req.body.srm_isnight,id]
       client.query(singleInsert, params, function (error, result) {
           results.push(result.rows[0]); // Will contain your inserted rows
           done();
