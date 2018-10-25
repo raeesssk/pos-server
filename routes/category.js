@@ -43,7 +43,7 @@ router.post('/checkname', oauth.authorise(), (req, res, next) => {
 
     // SQL Query > Select Data
     const strqry =  "SELECT * "+
-                    "from category_master ctm"+
+                    "from category_master ctm "+
                     "inner join restaurant_master srm on ctm.ctm_srm_id=srm.srm_id "+
                     "where ctm_status=0 "+
                     "and ctm_srm_id = $1 "+
