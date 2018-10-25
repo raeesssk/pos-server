@@ -7,53 +7,6 @@ var config = require('../config.js');
 
 var pool = new pg.Pool(config);
 
-router.get('/', oauth.authorise(), (req, res, next) => {
-  const results = [];
-  pool.connect(function(err, client, done){
-    if(err) {
-      done();
-      // pg.end();
-      console.log("the error is"+err);
-      return res.status(500).json({success: false, data: err});
-    }
-    const query = client.query("SELECT * FROM area_master where am_status = 0 order by am_id desc");
-    query.on('row', (row) => {
-      
-      results.push(row);
-    });
-    query.on('end', () => {
-      done();
-      // pg.end();
-      return res.json(results);
-    });
-  done(err);
-  });
-});
-
-router.get('/restaurant/:srmId', oauth.authorise(), (req, res, next) => {
-  const results = [];
-  const id = req.params.srmId;
-  pool.connect(function(err, client, done){
-    if(err) {
-      done();
-      // pg.end();
-      console.log("the error is"+err);
-      return res.status(500).json({success: false, data: err});
-    }
-    // SQL Query > Select Data
-    const query = client.query('SELECT * FROM area_master where am_srm_id=$1',[id]);
-    query.on('row', (row) => {
-      results.push(row);
-    });
-    query.on('end', () => {
-      done();
-      // pg.end();
-      return res.json(results);
-    });
-  done(err);
-  });
-});
-
 router.get('/:ctmId', oauth.authorise(), (req, res, next) => {
   const results = [];
   const id = req.params.ctmId;
@@ -77,31 +30,6 @@ router.get('/:ctmId', oauth.authorise(), (req, res, next) => {
   done(err);
   });
 });
-
-/*router.post('/add', oauth.authorise(), (req, res, next) => {
-  const results = [];
-  pool.connect(function(err, client, done){
-    if(err) {
-      done();
-      // pg.end();
-      console.log("the error is"+err);
-      return res.status(500).json({success: false, data: err});
-    }
-    // SQL Query > Insert Data
-    client.query('INSERT INTO area_master(am_name, am_username, am_status) values($1,$2,0)',[req.body.am_name,req.body.am_username]);
-    // SQL Query > Select Data
-    const query = client.query('SELECT * FROM area_master');
-    query.on('row', (row) => {
-      results.push(row);
-    });
-    query.on('end', () => {
-      done();
-      // pg.end();
-      return res.json(results);
-    });
-  done(err);
-  });
-});*/
 
 router.post('/add', oauth.authorise(), (req, res, next) => {
   const results = [];
@@ -191,11 +119,13 @@ router.post('/area/total', oauth.authorise(), (req, res, next) => {
 
     console.log(str);
     const strqry =  "SELECT count(am_id) as total "+
-                    "from area_master "+
+                    "from area_master am "+
+                    "inner join restaurant_master srm on am.am_srm_id=srm.srm_id "+
                     "where am_status=0 "+
-                    "and LOWER(am_name) LIKE LOWER($1);";
+                    "and am_srm_id = $1 "+
+                    "and LOWER(am_name) LIKE LOWER($2);";
 
-    const query = client.query(strqry,[str]);
+    const query = client.query(strqry,[req.body.am_srm_id,str]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -220,13 +150,48 @@ router.post('/area/limit', oauth.authorise(), (req, res, next) => {
     const str = "%"+req.body.search+"%";
     // SQL Query > Select Data
 
-    const strqry =  "SELECT am.am_name "+
-                    "FROM area_master am "+
-                    "where am.am_status = 0 "+
-                    "and LOWER(am_name) LIKE LOWER($1) "+
-                    "order by am.am_id desc LIMIT $2 OFFSET $3";
+    const strqry =  "SELECT * "+
+                    "from area_master am "+
+                    "inner join restaurant_master srm on am.am_srm_id=srm.srm_id "+
+                    "where am_status=0 "+
+                    "and am_srm_id = $1 "+
+                    "and LOWER(am_name) LIKE LOWER($2) "+
+                    "order by am.am_id desc LIMIT $3 OFFSET $4";
 
-    const query = client.query(strqry,[ str, req.body.number, req.body.begin]);
+    const query = client.query(strqry,[req.body.am_srm_id, str, req.body.number, req.body.begin]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+    done(err);
+  });
+});
+
+router.post('/typeahead/search', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const str = req.body.search+"%";
+    // SQL Query > Select Data
+
+    const strqry =  "SELECT * "+
+                    "from area_master am "+
+                    "inner join restaurant_master srm on am.am_srm_id=srm.srm_id "+
+                    "where am_status=0 "+
+                    "and am_srm_id = $1 "+
+                    "and LOWER(am_name) LIKE LOWER($2) "+
+                    "order by am.am_id desc LIMIT 10";
+
+    const query = client.query(strqry,[req.body.am_srm_id, str]);
     query.on('row', (row) => {
       results.push(row);
     });
