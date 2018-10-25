@@ -5,6 +5,10 @@ var pg = require('pg');
 var path = require('path');
 var config = require('../config.js');
 
+var multer = require('multer'); 
+
+var filenamestore = "";
+
 var pool = new pg.Pool(config);
 
 router.get('/:ctmId', oauth.authorise(), (req, res, next) => {
