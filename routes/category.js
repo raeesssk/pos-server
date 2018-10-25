@@ -195,7 +195,7 @@ router.post('/category/total', oauth.authorise(), (req, res, next) => {
 
     console.log(str);
     const strqry =  "SELECT count(ctm_id) as total "+
-                    "from category_master ctm"+
+                    "from category_master ctm "+
                     "inner join restaurant_master srm on ctm.ctm_srm_id=srm.srm_id "+
                     "where ctm_status=0 "+
                     "and ctm_srm_id = $1 "+
@@ -227,7 +227,7 @@ router.post('/category/limit', oauth.authorise(), (req, res, next) => {
     // SQL Query > Select Data
 
     const strqry =  "SELECT * "+
-                    "from category_master ctm"+
+                    "from category_master ctm "+
                     "inner join restaurant_master srm on ctm.ctm_srm_id=srm.srm_id "+
                     "where ctm_status=0 "+
                     "and ctm_srm_id = $1 "+
@@ -260,7 +260,7 @@ router.post('/typeahead/search', oauth.authorise(), (req, res, next) => {
     // SQL Query > Select Data
 
     const strqry =  "SELECT * "+
-                    "from category_master ctm"+
+                    "from category_master ctm "+
                     "inner join restaurant_master srm on ctm.ctm_srm_id=srm.srm_id "+
                     "where ctm_status=0 "+
                     "and ctm_srm_id = $1 "+
