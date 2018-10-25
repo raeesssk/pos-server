@@ -31,6 +31,36 @@ router.get('/:ctmId', oauth.authorise(), (req, res, next) => {
   });
 });
 
+router.post('/checkname', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+
+    // SQL Query > Select Data
+    const strqry =  "SELECT * "+
+                    "from area_master am "+
+                    "inner join restaurant_master srm on am.am_srm_id=srm.srm_id "+
+                    "where am_status=0 "+
+                    "and am_srm_id = $1 "+
+                    "and LOWER(am_name) like LOWER($2)";
+    const query = client.query(strqry,[req.body.am_srm_id,req.body.am_name]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+    done(err);
+  });
+});
+
 router.post('/add', oauth.authorise(), (req, res, next) => {
   const results = [];
   pool.connect(function(err, client, done){
