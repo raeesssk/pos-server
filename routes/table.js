@@ -50,7 +50,7 @@ router.post('/checkname', oauth.authorise(), (req, res, next) => {
                     "and tm_srm_id = $1 "+
                     "and LOWER(tm_description) like LOWER($2)"+
                     "and LOWER(am_name) like LOWER($3)";
-    const query = client.query(strqry,[req.body.am_srm_id,req.body.tm_description,req.body.tm_am_id.am_name]);
+    const query = client.query(strqry,[req.body.tm_srm_id,req.body.tm_description,req.body.tm_am_id.am_name]);
     query.on('row', (row) => {
       results.push(row);
     });
