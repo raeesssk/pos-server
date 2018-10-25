@@ -7,28 +7,6 @@ var config = require('../config.js');
 
 var pool = new pg.Pool(config);
 
-router.get('/', oauth.authorise(), (req, res, next) => {
-  const results = [];
-  pool.connect(function(err, client, done){
-    if(err) {
-      done();
-      // pg.end();
-      console.log("the error is"+err);
-      return res.status(500).json({success: false, data: err});
-    }
-    const query = client.query("SELECT * FROM table_master tm LEFT OUTER JOIN area_master am on tm.tm_am_id = am.am_id where tm.tm_status = 0 order by tm.tm_id asc");
-    query.on('row', (row) => {
-      results.push(row);
-    });
-    query.on('end', () => {
-      done();
-      // pg.end();
-      return res.json(results);
-    });
-  done(err);
-  });
-});
-
 router.get('/:ctmId', oauth.authorise(), (req, res, next) => {
   const results = [];
   const id = req.params.ctmId;
@@ -53,31 +31,6 @@ router.get('/:ctmId', oauth.authorise(), (req, res, next) => {
   });
 });
 
-/*router.post('/add', oauth.authorise(), (req, res, next) => {
-  const results = [];
-  pool.connect(function(err, client, done){
-    if(err) {
-      done();
-      // pg.end();
-      console.log("the error is"+err);
-      return res.status(500).json({success: false, data: err});
-    }
-    // SQL Query > Insert Data
-    client.query('INSERT INTO table_master(tm_description, tm_size, tm_am_id, tm_username, tm_status,tm_isreserved) values($1,$2,$3,$4,0,0)',[req.body.tm_description,req.body.tm_size,req.body.tm_am_id.am_id,req.body.tm_username]);
-    // SQL Query > Select Data
-    const query = client.query('SELECT * FROM table_master');
-    query.on('row', (row) => {
-      results.push(row);
-    });
-    query.on('end', () => {
-      done();
-      // pg.end();
-      return res.json(results);
-    });
-  done(err);
-  });
-});*/
-
 router.post('/add', oauth.authorise(), (req, res, next) => {
   const results = [];
   pool.connect(function(err, client, done){
@@ -88,8 +41,8 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
       return res.status(500).json({success: false, data: err});
     }
 
-    var singleInsert = 'INSERT INTO table_master(tm_description, tm_size, tm_am_id, tm_username, tm_status,tm_isreserved) values($1,$2,$3,$4,0,0) RETURNING *',
-        params = [req.body.tm_description,req.body.tm_size,req.body.tm_am_id.am_id,req.body.tm_username]
+    var singleInsert = 'INSERT INTO table_master(tm_description, tm_size, tm_am_id, tm_srm_id, tm_isreserved) values($1,$2,$3,$4,0) RETURNING *',
+        params = [req.body.tm_description,req.body.tm_size,req.body.tm_am_id.am_id,req.body.tm_srm_id]
     client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
         done();
@@ -99,32 +52,6 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
     done(err);
   });
 });
-
-/*router.post('/edit/:ctmId', oauth.authorise(), (req, res, next) => {
-  const results = [];
-  const id = req.params.ctmId;
-  pool.connect(function(err, client, done){
-    if(err) {
-      done();
-      // pg.end();
-      console.log("the error is"+err);
-      return res.status(500).json({success: false, data: err});
-    }
-    // SQL Query > Insert Data
-    client.query('UPDATE table_master SET tm_description=$1, tm_size=$2, tm_am_id=$3, tm_updated_at=now() where tm_id=$4',[req.body.tm_description,req.body.tm_size,req.body.tm_am.am_id,id]);
-    // SQL Query > Select Data
-    const query = client.query('SELECT * FROM table_master');
-    query.on('row', (row) => {
-      results.push(row);
-    });
-    query.on('end', () => {
-      done();
-      // pg.end();
-      return res.json(results);
-    });
-  done(err);
-  });
-});*/
 
 router.post('/edit/:ctmId', oauth.authorise(), (req, res, next) => {
   const results = [];
@@ -139,7 +66,7 @@ router.post('/edit/:ctmId', oauth.authorise(), (req, res, next) => {
 
     client.query('BEGIN;');
 
-    var singleInsert = 'UPDATE table_master SET tm_description=$1,tm_size=$2, tm_am_id=$3, tm_updated_at=now() where tm_id=$2 RETURNING *',
+    var singleInsert = 'UPDATE table_master SET tm_description=$1, tm_size=$2, tm_am_id=$3, tm_updated_at=now() where tm_id=$4 RETURNING *',
         params = [req.body.tm_description,req.body.tm_size,req.body.tm_am.am_id,id]
     client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
@@ -240,10 +167,12 @@ router.post('/table/total', oauth.authorise(), (req, res, next) => {
     const strqry =  "SELECT count(tm_id) as total "+
                     "from table_master tm "+
                     "LEFT OUTER JOIN area_master am on tm.tm_am_id = am.am_id "+
+                    "inner join restaurant_master srm on tm.tm_srm_id=srm.srm_id "+
                     "where tm_status=0 "+
-                    "and LOWER(tm_description||''||tm_size||''||tm_am_id) LIKE LOWER($1);";
+                    "and tm_srm_id = $1 "+
+                    "and LOWER(tm_description||''||tm_size||''||am_name) LIKE LOWER($2);";
 
-    const query = client.query(strqry,[str]);
+    const query = client.query(strqry,[req.body.tm_srm_id, str]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -269,13 +198,15 @@ router.post('/table/limit', oauth.authorise(), (req, res, next) => {
     // SQL Query > Select Data
 
     const strqry =  "SELECT * "+
-                    "FROM table_master tm "+
+                    "from table_master tm "+
                     "LEFT OUTER JOIN area_master am on tm.tm_am_id = am.am_id "+
-                    "where tm.tm_status = 0 "+
-                    "and LOWER(tm_description||''||tm_size||''||tm_am_id) LIKE LOWER($1) "+
-                    "order by tm.tm_id desc LIMIT $2 OFFSET $3";
+                    "inner join restaurant_master srm on tm.tm_srm_id=srm.srm_id "+
+                    "where tm_status=0 "+
+                    "and tm_srm_id = $1 "+
+                    "and LOWER(tm_description||''||tm_size||''||am_name) LIKE LOWER($2) "+
+                    "order by tm.tm_id desc LIMIT $3 OFFSET $4";
 
-    const query = client.query(strqry,[ str, req.body.number, req.body.begin]);
+    const query = client.query(strqry,[req.body.tm_srm_id, str, req.body.number, req.body.begin]);
     query.on('row', (row) => {
       results.push(row);
     });
