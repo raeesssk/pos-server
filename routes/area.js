@@ -7,6 +7,39 @@ var config = require('../config.js');
 
 var pool = new pg.Pool(config);
 
+router.get('/restaurant/:ctmId', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  const id = req.params.ctmId;
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const str = "%"+req.body.search+"%";
+    // SQL Query > Select Data
+
+    const strqry =  "SELECT * "+
+                    "from area_master am "+
+                    "inner join restaurant_master srm on am.am_srm_id=srm.srm_id "+
+                    "where am_status=0 "+
+                    "and am_srm_id = $1 "+
+                    "order by am.am_id desc";
+
+    const query = client.query(strqry,[id]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+    done(err);
+  });
+});
+
 router.get('/:ctmId', oauth.authorise(), (req, res, next) => {
   const results = [];
   const id = req.params.ctmId;
