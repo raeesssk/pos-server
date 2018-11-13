@@ -16,7 +16,7 @@ router.get('/', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    const query = client.query("SELECT * FROM recipe_master rm LEFT OUTER JOIN product_master pm on rm.rm_pm_id = pm.pm_id LEFT OUTER JOIN category_master ctm on pm.pm_ctm_id = ctm.ctm_id LEFT OUTER JOIN inventory_master im on rm.rm_im_id = im.im_id LEFT OUTER JOIN unit_master um on im.im_um_id = um.um_id where rm.rm_status = 0 order by rm.rm_id desc");
+    const query = client.query("SELECT * FROM recipe_master rm LEFT OUTER JOIN product_master pm on rm.rm_pm_id = pm.pm_id LEFT OUTER JOIN category_master ctm on pm.pm_ctm_id = ctm.ctm_id LEFT OUTER JOIN inventory_master im on rm.rm_im_id = im.im_id LEFT OUTER JOIN unit_master um on im.im_um_id = um.um_id  where rm.rm_status = 0 order by rm.rm_id desc");
     query.on('row', (row) => {
       results.push(row);
     });
@@ -40,7 +40,7 @@ router.get('/:ctmId', oauth.authorise(), (req, res, next) => {
       return res.status(500).json({success: false, data: err});
     }
     // SQL Query > Select Data
-    const query = client.query('SELECT * FROM recipe_master rm LEFT OUTER JOIN product_master pm on rm.rm_pm_id = pm.pm_id LEFT OUTER JOIN category_master ctm on pm.pm_ctm_id = ctm.ctm_id LEFT OUTER JOIN inventory_master im on rm.rm_im_id = im.im_id LEFT OUTER JOIN unit_master um on im.im_um_id = um.um_id where rm.rm_id=$1',[id]);
+    const query = client.query('SELECT * FROM recipe_master rm LEFT OUTER JOIN product_master pm on rm.rm_pm_id = pm.pm_id LEFT OUTER JOIN category_master ctm on pm.pm_ctm_id = ctm.ctm_id LEFT OUTER JOIN inventory_master im on rm.rm_im_id = im.im_id LEFT OUTER JOIN unit_master um on im.im_um_id = um.um_id LEFT OUTER JOIN restaurant_master srm on rm.rm_srm_id=srm.srm_id where rm.rm_id=$1',[id]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -88,8 +88,9 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
       return res.status(500).json({success: false, data: err});
     }
 
-    var singleInsert = 'INSERT INTO recipe_master(rm_pm_id, rm_im_id, rm_quantity, rm_username, rm_status) values($1,$2,$3,$4,0) RETURNING *',
-        params = [req.body.rm_pm_id.pm_id,req.body.rm_im_id.im_id,req.body.rm_quantity,req.body.rm_username]
+    var singleInsert = 'INSERT INTO recipe_master(rm_pm_id, rm_im_id, rm_quantity, rm_srm_id, rm_status) values($1,$2,$3,$4,0) RETURNING *',
+        params = [req.body.rm_pm_id.pm_id,req.body.rm_im_id.im_id,req.body.rm_quantity,req.body.rm_srm_id]
+      
     client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
         done();
@@ -100,7 +101,7 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
   });
 });
 
-router.post('/edit/:ctmId', oauth.authorise(), (req, res, next) => {
+/*router.post('/edit/:ctmId', oauth.authorise(), (req, res, next) => {
   const results = [];
   const id = req.params.ctmId;
   pool.connect(function(err, client, done){
@@ -125,7 +126,7 @@ router.post('/edit/:ctmId', oauth.authorise(), (req, res, next) => {
   done(err);
   });
 });
-
+*/
 
 router.post('/edit/:ctmId', oauth.authorise(), (req, res, next) => {
   const results = [];
@@ -196,10 +197,12 @@ router.post('/recipe/total', oauth.authorise(), (req, res, next) => {
                     "LEFT OUTER JOIN category_master ctm on pm.pm_ctm_id = ctm.ctm_id "+
                     "LEFT OUTER JOIN inventory_master im on rm.rm_im_id = im.im_id "+
                     "LEFT OUTER JOIN unit_master um on im.im_um_id = um.um_id "+
+                    "LEFT OUTER JOIN restaurant_master srm on rm.rm_srm_id=srm.srm_id "+
                     "where rm_status=0 "+
-                    "and LOWER(rm_pm_id||''||rm_im_id||''||rm_quantity) LIKE LOWER($1);";
+                    "and rm_srm_id=$1 "+
+                    "and LOWER(rm_pm_id||''||rm_im_id||''||rm_quantity) LIKE LOWER($2);";
 
-    const query = client.query(strqry,[str]);
+    const query = client.query(strqry,[req.body.rm_srm_id,str]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -230,11 +233,13 @@ router.post('/recipe/limit', oauth.authorise(), (req, res, next) => {
                     "LEFT OUTER JOIN category_master ctm on pm.pm_ctm_id = ctm.ctm_id "+
                     "LEFT OUTER JOIN inventory_master im on rm.rm_im_id = im.im_id "+
                     "LEFT OUTER JOIN unit_master um on im.im_um_id = um.um_id "+
+                    "LEFT OUTER JOIN restaurant_master srm on rm.rm_srm_id=srm.srm_id "+
                     "where rm.rm_status = 0 "+
-                    "and LOWER(rm_pm_id||''||rm_im_id||''||rm_quantity) LIKE LOWER($1) "+
-                    "order by rm.rm_id desc LIMIT $2 OFFSET $3";
+                    "and rm_srm_id=$1 "+
+                    "and LOWER(rm_pm_id||''||rm_im_id||''||rm_quantity) LIKE LOWER($2) "+
+                    "order by rm.rm_id desc LIMIT $3 OFFSET $4";
 
-    const query = client.query(strqry,[ str, req.body.number, req.body.begin]);
+    const query = client.query(strqry,[req.body.rm_srm_id, str, req.body.number, req.body.begin]);
     query.on('row', (row) => {
       results.push(row);
     });

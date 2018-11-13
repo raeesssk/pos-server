@@ -88,8 +88,8 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
       return res.status(500).json({success: false, data: err});
     }
 
-    var singleInsert = 'INSERT INTO unit_master(um_name, um_username, um_status) values($1,$2,0) RETURNING *',
-        params = [req.body.um_name,req.body.um_username]
+    var singleInsert = 'INSERT INTO unit_master(um_name, um_srm_id, um_status) values($1,$2,0) RETURNING *',
+        params = [req.body.um_name,req.body.um_srm_id]
     client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
         done();
@@ -165,11 +165,13 @@ router.post('/unit/total', oauth.authorise(), (req, res, next) => {
 
     console.log(str);
     const strqry =  "SELECT count(um_id) as total "+
-                    "from unit_master "+
+                    "from unit_master um "+
+                    "left outer join restaurant_master srm on um.um_srm_id=srm.srm_id "+
                     "where um_status=0 "+
-                    "and LOWER(um_name) LIKE LOWER($1);";
+                    "and um_srm_id=$1 "+
+                    "and LOWER(um_name) LIKE LOWER($2);";
 
-    const query = client.query(strqry,[str]);
+    const query = client.query(strqry,[req.body.um_srm_id,str]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -196,11 +198,46 @@ router.post('/unit/limit', oauth.authorise(), (req, res, next) => {
 
     const strqry =  "SELECT * "+
                     "FROM unit_master um "+
+                    "left outer join restaurant_master srm on um.um_srm_id=srm.srm_id "+
                     "where um.um_status = 0 "+
-                    "and LOWER(um_name) LIKE LOWER($1) "+
-                    "order by um.um_id desc LIMIT $2 OFFSET $3";
+                    "and um_srm_id=$1 "+
+                    "and LOWER(um_name) LIKE LOWER($2) "+
+                    "order by um.um_id desc LIMIT $3 OFFSET $4";
 
-    const query = client.query(strqry,[ str, req.body.number, req.body.begin]);
+    const query = client.query(strqry,[req.body.um_srm_id, str, req.body.number, req.body.begin]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+    done(err);
+  });
+});
+
+router.post('/typeahead/search', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const str = "%"+req.body.search+"%";
+    // SQL Query > Select Data
+
+    const strqry =  "SELECT * "+
+                    "from unit_master um "+
+                    "inner join restaurant_master srm on um.um_srm_id=srm.srm_id "+
+                    "where um_status=0 "+
+                    "and um_srm_id = $1 "+
+                    "and LOWER(um_name) LIKE LOWER($2) "+
+                    "order by um.um_id desc LIMIT 10";
+
+    const query = client.query(strqry,[req.body.um_srm_id, str]);
     query.on('row', (row) => {
       results.push(row);
     });

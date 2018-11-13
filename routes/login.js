@@ -61,11 +61,12 @@ router.get('/', oauth.authorise(), (req, res, next) => {
 
 router.post('/check', (req, res, next) => {
   const results = [];
+  console.log(req.body);
   pool.connect(function(err, client, done){
     if(err) {
       done();
       // pg.end();
-      console.log("the error is"+err);
+      console.log("the error is "+err);
       return res.status(500).json({success: false, data: err});
     }
  

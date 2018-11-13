@@ -10,6 +10,28 @@ var filenamestore = "";
 
 var pool = new pg.Pool(config);
 
+
+router.get('/', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const query = client.query("SELECT * FROM product_master pm LEFT OUTER JOIN category_master ctm on pm.pm_ctm_id = ctm.ctm_id where pm.pm_status = 0 order by pm.pm_id desc");
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+  done(err);
+  });
+});
 router.post('/items', oauth.authorise(), (req, res, next) => {
   const results = [];
   
@@ -81,31 +103,61 @@ router.get('/price/:productId', oauth.authorise(), (req, res, next) => {
   });
 });
 
-router.post('/add', oauth.authorise(), (req, res, next) => {
+router.post('/checkname', oauth.authorise(), (req, res, next) => {
   const results = [];
-  const product = req.body.product;
-  const productList = req.body.productList;
-  // var Storage = multer.diskStorage({
-  //     destination: function (req, file, callback) {
-  //         // callback(null, "./images");
-  //           callback(null, '../pos/resources/assets/img/allimages');
-            
-  //     },
-  //     filename: function (req, file, callback) {
-  //         var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
-  //         filenamestore = "../resources/assets/img"+fi;
-  //         callback(null, fi);
-  //     }
-  // });
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
 
-  // var upload = multer({ storage: Storage }).array("imgUploader"); 
+    // SQL Query > Select Data
+    const strqry =  "SELECT * "+
+                    "from product_master pm "+
+                    "inner join restaurant_master srm on pm.pm_srm_id=srm.srm_id "+
+                    "where pm_status=0 "+
+                    "and pm_srm_id = $1 "+
+                    "and LOWER(pm_description) like LOWER($2)";
+    const query = client.query(strqry,[req.body.pm_srm_id,req.body.pm_description]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+    done(err);
+  });
+});
+
+/*router.post('/add', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  console.log(req.body);
+
+  var Storage = multer.diskStorage({
+      destination: function (req, file, callback) {
+          // callback(null, "./images");
+            callback(null, '../pos/resources/assets/img/allimages');
+            
+      },
+      filename: function (req, file, callback) {
+          var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
+          filenamestore = "../resources/assets/img"+fi;
+          callback(null, fi);
+      }
+  });
+
+  var upload = multer({ storage: Storage }).array("pm_image"); 
   
-  // upload(req, res, function (err) { 
-  //   if (err) { 
-  //       return res.end("Something went wrong!"+err); 
-  //   } 
+  upload(req, res, function (err) { 
+    if (err) { 
+        return res.end("Something went wrong!"+err); 
+    } 
      
-  // });
+  });
   pool.connect(function(err, client, done){
     if(err) {
       done();
@@ -115,15 +167,16 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
     }
       client.query('BEGIN;');
 
-    var singleInsert = 'INSERT INTO product_master(pm_description, pm_ctm_id, pm_dish_no, pm_expected_in, pm_image, pm_status) values($1,$2,$3,$4,$5,0) RETURNING *',
-        params = [product.pm_description,product.pm_ctm_id.ctm_id,product.pm_dish_no,product.pm_expected_in,filenamestore]
-    client.query(singleInsert, params, function (error, result) {
+    var singleInsert = 'INSERT INTO product_master(pm_description, pm_ctm_id, pm_dish_no, pm_expected_in, pm_image, pm_srm_id, pm_status) values($1,$2,$3,$4,$5,$6,0) RETURNING *',
+        params = [req.body.pm_description,req.body.pm_ctm_id,req.body.pm_dish_no,req.body.pm_expected_in,filenamestore,req.body.pm_srm_id]
+      console.log(params);
+      client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
 
-        productList.forEach(function(product, index) {
-            client.query('INSERT INTO public.product_price_master(ppm_pm_id, ppm_am_id, ppm_fullday_price, ppm_fullnight_price, ppm_halfday_price, ppm_halfnight_price)VALUES ($1, $2, $3, $4, $5, $6)',[result.rows[0].pm_id,product.am_id,product.ppm_fullday_price,product.ppm_fullnight_price,product.ppm_halfday_price,product.ppm_halfnight_price]);
-             
-          });
+        
+            client.query('INSERT INTO public.product_price_master(ppm_pm_id, ppm_am_id, ppm_fullday_price, ppm_fullnight_price, ppm_halfday_price, ppm_halfnight_price)VALUES ($1, $2, $3, $4, $5, $6)',
+              [result.rows[0].pm_id,req.body.am_id,req.body.pm_fullday_price,req.body.pm_fullnight_price,req.body.pm_halfday_price,req.body.pm_halfnight_price]);
+          
 
             client.query('COMMIT;');
         done();
@@ -133,6 +186,89 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
     done(err);
   });
 });
+*/
+router.post('/add', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  var productlist = req.body.list;
+  var product = req.body.product;
+  
+
+    pool.connect(function(err, client, done){
+      if(err) {
+        done();
+        // pg.end();
+        console.log("the error is"+err);
+        return res.status(500).json({success: false, data: err});
+      }
+
+      var singleInsert = 'INSERT INTO product_master(pm_description, pm_ctm_id, pm_dish_no, pm_expected_in, pm_srm_id, pm_status) values($1,$2,$3,$4,$5,0) RETURNING *',
+          params = [product.pm_description,product.pm_ctm_id.ctm_id,product.pm_dish_no,product.pm_expected_in,product.pm_srm_id]
+     
+          client.query(singleInsert, params, function (error, result) {
+          results.push(result.rows[0]); // Will contain your inserted rows
+
+          productlist.forEach(function(product,key){
+            client.query('INSERT INTO public.product_price_master(ppm_pm_id, ppm_am_id, ppm_fullday_price, ppm_fullnight_price, ppm_halfday_price, ppm_halfnight_price)VALUES ($1, $2, $3, $4, $5, $6)',
+              [result.rows[0].pm_id,product.am_id,product.pm_fullday_price,product.pm_fullnight_price,product.pm_halfday_price,product.pm_halfnight_price]);
+          
+          });
+
+          done();
+          return res.json(results);
+      });
+
+    done(err);
+    });
+});
+
+
+router.post('/image/:productId', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  const id = req.params.productId;
+  var Storage = multer.diskStorage({
+      destination: function (req, file, callback) {
+          // callback(null, "./images");
+            callback(null, '../pos/resources/assets/img/allimages');
+      },
+      filename: function (req, file, callback) {
+          var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
+          filenamestore = "../resources/assets/img"+fi;
+          callback(null, fi);
+      }
+  });
+
+  var upload = multer({ storage: Storage }).array("pm_image"); 
+
+  upload(req, res, function (err) { 
+    if (err) { 
+        return res.end("Something went wrong!"+err); 
+    } 
+
+    pool.connect(function(err, client, done){
+      if(err) {
+        done();
+        // pg.end();
+        console.log("the error is"+err);
+        return res.status(500).json({success: false, data: err});
+      }
+
+      var singleInsert = 'update  product_master set pm_image=$1 where pm_id=$2 RETURNING *',
+          params = [filenamestore,id]
+      client.query(singleInsert, params, function (error, result) {
+          results.push(result.rows[0]); // Will contain your inserted rows
+
+        
+
+          done();
+          return res.json(results);
+      });
+
+    done(err);
+    });
+  }); 
+});
+
+
 
 router.post('/edit/:productId', oauth.authorise(), (req, res, next) => {
   const results = [];
@@ -223,10 +359,12 @@ router.post('/product/total', oauth.authorise(), (req, res, next) => {
     const strqry =  "SELECT count(pm.pm_id) as total "+
                     "FROM product_master pm "+
                     "LEFT OUTER JOIN category_master cm on pm.pm_ctm_id = cm.ctm_id "+
+                    "LEFT OUTER JOIN restaurant_master srm on pm.pm_srm_id=srm.srm_id "+
                     "where pm.pm_status=0 "+
-                    "and LOWER(pm_description||''||pm_dish_no) LIKE LOWER($1);";
+                    "and pm_srm_id = $1 "+
+                    "and LOWER(pm_description||''||pm_dish_no) LIKE LOWER($2);";
 
-    const query = client.query(strqry,[str]);
+    const query = client.query(strqry,[req.body.pm_srm_id,str]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -253,12 +391,14 @@ router.post('/product/limit', oauth.authorise(), (req, res, next) => {
     const strqry =  "SELECT * "+
                     "FROM product_master pm "+
                     "LEFT OUTER JOIN category_master cm on pm.pm_ctm_id = cm.ctm_id "+
+                    "LEFT OUTER JOIN restaurant_master srm on pm.pm_srm_id=srm.srm_id "+
                     "where pm.pm_status=0 "+
-                    "and LOWER(pm_description||''||pm_dish_no) LIKE LOWER($1) "+
-                    "order by pm.pm_id desc LIMIT $2 OFFSET $3";
+                    "and pm_srm_id = $1 "+
+                    "and LOWER(pm_description||''||pm_dish_no) LIKE LOWER($2) "+
+                    "order by pm.pm_id desc LIMIT $3 OFFSET $4";
 
     // SQL Query > Select Data
-    const query = client.query(strqry,[ str, req.body.number, req.body.begin]);
+    const query = client.query(strqry,[req.body.pm_srm_id, str, req.body.number, req.body.begin]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -271,9 +411,9 @@ router.post('/product/limit', oauth.authorise(), (req, res, next) => {
   });
 });
 
-router.post('/recipe', oauth.authorise(), (req, res, next) => {
+router.get('/recipe/:productId', oauth.authorise(), (req, res, next) => {
   const results = [];
-  var list=req.body;
+  var id=req.params.productId;
   pool.connect(function(err, client, done){
     if(err) {
       done();
@@ -281,7 +421,7 @@ router.post('/recipe', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    const query = client.query("SELECT * FROM recipe_master rm INNER JOIN product_master pm on rm.rm_pm_id = pm.pm_id INNER JOIN category_master ctm on pm.pm_ctm_id=ctm.ctm_id INNER JOIN inventory_master im on rm.rm_im_id = im.im_id INNER JOIN unit_master um on im.im_um_id = um.um_id where pm_id=$1",[list.pm_id]);
+    const query = client.query("SELECT * FROM recipe_master rm INNER JOIN product_master pm on rm.rm_pm_id = pm.pm_id INNER JOIN category_master ctm on pm.pm_ctm_id=ctm.ctm_id INNER JOIN inventory_master im on rm.rm_im_id = im.im_id INNER JOIN unit_master um on im.im_um_id = um.um_id where pm_id=$1",[id]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -293,4 +433,38 @@ router.post('/recipe', oauth.authorise(), (req, res, next) => {
   done(err);
   });
 });
+
+router.post('/typeahead/search', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const str = "%"+req.body.search+"%";
+    // SQL Query > Select Data
+
+    const strqry =  "SELECT * "+
+                    "from product_master pm "+
+                    "inner join restaurant_master srm on pm.pm_srm_id=srm.srm_id "+
+                    "where pm_status=0 "+
+                    "and pm_srm_id = $1 "+
+                    "and LOWER(pm_description) LIKE LOWER($2) "+
+                    "order by pm.pm_id desc LIMIT 10";
+
+    const query = client.query(strqry,[req.body.pm_srm_id, str]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+    done(err);
+  });
+});
+
 module.exports = router;
