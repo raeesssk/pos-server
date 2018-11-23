@@ -36,6 +36,11 @@ var takeaway=require('./routes/takeaway');
 var signup = require('./routes/signup');
 var corporate = require('./routes/corporate');
 var restaurant = require('./routes/restaurant');
+var employee = require('./routes/employee');
+var role = require('./routes/role');
+var permission = require('./routes/permission');
+var userm = require('./routes/userm');
+
 
 var pmx = require('pmx').init({
   http          : true, // HTTP routes logging (default: true)
@@ -90,6 +95,10 @@ app.use('/takeaway',takeaway);
 app.use('/signup',signup);
 app.use('/corporate',corporate);
 app.use('/restaurant',restaurant);
+app.use('/employee',employee);
+app.use('/role',role);
+app.use('/permission',permission);
+app.use('/userm',userm);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   var err = new Error('Not Found');

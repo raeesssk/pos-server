@@ -21,7 +21,7 @@ router.get('/', oauth.authorise(), (req, res, next) => {
       return res.status(500).json({success: false, data: err});
     }
     // SQL Query > Select Data
-    const query = client.query('SELECT * FROM category_master where ctm_status=0');
+    const query = client.query('SELECT * FROM category_master ctm left outer join restaurant_master srm on ctm.ctm_srm_id=srm.srm_id where ctm_status=0');
     query.on('row', (row) => {
       results.push(row);
     });

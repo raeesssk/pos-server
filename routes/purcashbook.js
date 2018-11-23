@@ -77,7 +77,8 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
       const debit = amount - credit;
       client.query('update dealer_master set dm_credit=dm_credit-$1, dm_debit=dm_debit+$2 where dm_id=$3',[credit,debit,expenseSingleData.pcm_dm_id.dm_id]);
     }
-    client.query('INSERT INTO purcashbook_master(pcm_dm_id, pcm_date, pcm_received_by, pcm_comment, pcm_payment_mode, pcm_amount, pcm_cheque_no, pcm_cheque_date, pcm_username, pcm_status) values($1,$2,$3,$4,$5,$6,$7,$8,$9,0)',[expenseSingleData.pcm_dm_id.dm_id,expenseSingleData.pcm_date,expenseSingleData.pcm_received_by,expenseSingleData.pcm_comment,expenseSingleData.pcm_payment_mode,expenseSingleData.pcm_amount,expenseSingleData.pcm_cheque_no,expenseSingleData.pcm_cheque_date,expenseSingleData.pcm_username]);
+    client.query('INSERT INTO purcashbook_master(pcm_dm_id, pcm_date, pcm_received_by, pcm_comment, pcm_payment_mode, pcm_amount, pcm_cheque_no, pcm_cheque_date, pcm_username, pcm_srm_id, pcm_status) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,0)',
+      [expenseSingleData.pcm_dm_id.dm_id,expenseSingleData.pcm_date,expenseSingleData.pcm_received_by,expenseSingleData.pcm_comment,expenseSingleData.pcm_payment_mode,expenseSingleData.pcm_amount,expenseSingleData.pcm_cheque_no,expenseSingleData.pcm_cheque_date,expenseSingleData.pcm_username,expenseSingleData.pcm_srm_id]);
     
     client.query('COMMIT;');
     // SQL Query > Insert Data
@@ -211,10 +212,12 @@ router.post('/purcashbook/total', oauth.authorise(), (req, res, next) => {
     const strqry =  "SELECT count(pcm_id) as total "+
                     "from purcashbook_master pcm "+
                     "LEFT OUTER JOIN dealer_master dm on pcm.pcm_dm_id = dm.dm_id "+
+                    "LEFT OUTER JOIN restaurant_master srm on pcm.pcm_srm_id=srm.srm_id "+
                     "where pcm_status = 0 "+
-                    "and LOWER(dm_firm_name||''||pcm_payment_mode||''||pcm_date) LIKE LOWER($1) ";
+                    "and pcm_srm_id=$1 "+
+                    "and LOWER(dm_firm_name||''||pcm_payment_mode||''||pcm_date) LIKE LOWER($2) ";
                     
-    const query = client.query(strqry,[str]);
+    const query = client.query(strqry,[req.body.pcm_srm_id,str]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -242,11 +245,13 @@ router.post('/purcashbook/limit', oauth.authorise(), (req, res, next) => {
     const strqry =  "SELECT * "+
                     "FROM purcashbook_master pcm "+
                     "LEFT OUTER JOIN dealer_master dm on pcm.pcm_dm_id = dm.dm_id "+
+                    "LEFT OUTER JOIN restaurant_master srm on pcm.pcm_srm_id=srm.srm_id "+
                     "where pcm.pcm_status = 0 "+
-                    "and LOWER(dm_firm_name||''||pcm_payment_mode||''||pcm_date) LIKE LOWER($1) "+
-                    "order by pcm.pcm_id desc LIMIT $2 OFFSET $3";
+                    "and pcm_srm_id=$1 "+
+                    "and LOWER(dm_firm_name||''||pcm_payment_mode||''||pcm_date) LIKE LOWER($2) "+
+                    "order by pcm.pcm_id desc LIMIT $3 OFFSET $4";
 
-    const query = client.query(strqry,[ str, req.body.number, req.body.begin]);
+    const query = client.query(strqry,[ req.body.pcm_srm_id, str, req.body.number, req.body.begin]);
     query.on('row', (row) => {
       results.push(row);
     });

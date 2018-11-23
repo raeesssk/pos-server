@@ -21,7 +21,7 @@ router.get('/:uId', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    const query = client.query("SELECT * FROM restaurant_master where srm_status = 0 and srm_user_id=$1",[id]);
+    const query = client.query("SELECT * FROM users um left outer join restaurant_master srm on um.user_srm_id=srm.srm_id where srm_status = 0 and id=$1",[id]);
     query.on('row', (row) => {
       
       results.push(row);

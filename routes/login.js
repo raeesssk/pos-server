@@ -9,6 +9,79 @@ var multer = require('multer');
 
 var pool = new pg.Pool(config);
 
+router.get('/permission/:roleId', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  const id = req.params.roleId;
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      done(err);
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    // SQL Query > Select Data
+    const query = client.query("select DISTINCT(pmm_id),pmm_name,pmm_class from role_permission_master rpm left outer join permission_master pmm on rpm.rpm_pmm_id=pmm.pmm_id where rpm_rm_id = $1 order by pmm_id asc",[id]);
+    // Stream results back one row at a time
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    // After all data is returned, close connection and return results
+    query.on('end', () => {
+      done();
+      return res.json(results);
+    });
+    done(err);
+  });
+});
+
+router.post('/sub', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      done(err);
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    // SQL Query > Select Data
+    const query = client.query("select distinct(rpm.rpm_psm_id),psm_permissions,psm_url,psm_icon,psm_id from role_permission_master rpm inner join permission_sub_master psm on rpm.rpm_psm_id=psm.psm_id where psm_pmm_id=$1 and rpm_rm_id=$2 order by psm_id asc",[ req.body.pmm_id, req.body.roleid]);
+    // Stream results back one row at a time
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    // After all data is returned, close connection and return results
+    query.on('end', () => {
+      done();
+      return res.json(results);
+    });
+    done(err);
+  });
+});
+
+router.get('/superole/:roleId', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  const id=req.params.roleId;
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const query = client.query("SELECT rpm_rm_id,rpm_pmm_id,rpm_psm_id,rpm_pssm_id FROM role_permission_master rpm left outer join permission_sub_master psm on rpm.rpm_psm_id =psm.psm_id left outer join permission_supersub_master pssm on rpm.rpm_pssm_id=pssm.pssm_id left outer join permission_master pmm on rpm.rpm_pmm_id=pmm.pmm_id where rpm_rm_id=$1",[id]);
+    query.on('row', (row) => {
+      results.push(row);
+
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+  done(err);
+  });
+});
+
 router.get('/', oauth.authorise(), (req, res, next) => {
   const results = [];
   pool.connect(function(err, client, done){
@@ -61,7 +134,6 @@ router.get('/', oauth.authorise(), (req, res, next) => {
 
 router.post('/check', (req, res, next) => {
   const results = [];
-  console.log(req.body);
   pool.connect(function(err, client, done){
     if(err) {
       done();
@@ -73,7 +145,7 @@ router.post('/check', (req, res, next) => {
     // SQL Query > Insert Data
     // client.query('UPDATE employee_master SET cm_code=$1, cm_name=$2, cm_mobile=$3, cm_email=$4, cm_address=$5, cm_city=$6, cm_state=$7, cm_pin_code=$8, cm_car_name=$9, cm_car_model=$10, cm_car_number=$11 where cm_id=$12',[req.body.cm_code,req.body.cm_name,req.body.cm_mobile,req.body.cm_email,req.body.cm_address,req.body.cm_city,req.body.cm_state,req.body.cm_pin_code,req.body.cm_car_name,req.body.cm_car_model,req.body.cm_car_number,id]);
     // SQL Query > Select Data
-    const query = client.query('SELECT  username FROM users where username=$1',[req.body.username]);
+    const query = client.query('SELECT username FROM users where username=$1',[req.body.username]);
     // Stream results back one row at a time
     query.on('row', (row) => {
       results.push(row);

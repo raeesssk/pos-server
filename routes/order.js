@@ -34,8 +34,8 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
       if(results.length>0){
         no=results[0].om_no + 1;
       }
-      var singleInsert = 'INSERT INTO order_master(om_no,om_tm_id,om_where,om_amount,om_net_amount,om_cgst_amount,om_sgst_amount,om_igst_amount,om_cgst_per,om_sgst_per,om_igst_per,om_status) values($1,$2,$3,0,0,0,0,0,0,0,0,0) RETURNING *',
-        params = [no,req.body.tm_id,req.body.om_where]
+      var singleInsert = 'INSERT INTO order_master(om_no,om_tm_id,om_where,om_srm_id,om_amount,om_net_amount,om_cgst_amount,om_sgst_amount,om_igst_amount,om_cgst_per,om_sgst_per,om_igst_per,om_status) values($1,$2,$3,$4,0,0,0,0,0,0,0,0,0) RETURNING *',
+        params = [no,req.body.tm_id,req.body.om_where,req.body.srm_id]
         client.query(singleInsert, params, function (error, result) {
         data.push(result.rows[0]); // Will contain your inserted rows
         done();
@@ -162,7 +162,7 @@ router.post('/placeorder', oauth.authorise(), (req, res, next) => {
     client.query('BEGIN;');
       orderMultipleData.forEach(function(product, index) {
       client.query('INSERT INTO order_product_master(opm_om_id, opm_pm_id, opm_quantity, opm_rate, opm_total) values($1,$2,$3,$4,$5) RETURNING *',
-      [order.om_id,product.pm_id,product.quantity,product.pm_rate,product.total]);
+      [order.om_id,product.pm_id,product.quantity,product.price,product.total]);
          
     });
       var singleInsert = 'UPDATE order_master SET om_amount=om_amount + $1 WHERE om_id=$2 RETURNING *',
@@ -181,7 +181,6 @@ router.post('/placeorder', oauth.authorise(), (req, res, next) => {
 
 router.post('/ongoing/orders', oauth.authorise(), (req, res, next) => {
   const results = [];
-  console.log(req.body)
   pool.connect(function(err, client, done){
     if(err) {
       done();
@@ -189,7 +188,7 @@ router.post('/ongoing/orders', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    const query = client.query("SELECT * FROM order_product_master opm INNER JOIN order_master om on opm.opm_om_id = om.om_id INNER JOIN product_master pm on opm.opm_pm_id=pm.pm_id INNER JOIN table_master tm on om.om_tm_id=tm.tm_id INNER JOIN area_master am on tm.tm_am_id=am.am_id where om_status_type like 'open' and om_id=$1",[req.body.om_id]);
+    const query = client.query("SELECT * FROM order_product_master opm INNER JOIN order_master om on opm.opm_om_id = om.om_id INNER JOIN product_master pm on opm.opm_pm_id=pm.pm_id INNER JOIN table_master tm on om.om_tm_id=tm.tm_id INNER JOIN area_master am on tm.tm_am_id=am.am_id INNER JOIN restaurant_master srm on om.om_srm_id=srm.srm_id where om_status_type like 'open' and om_id=$1",[req.body.om_id]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -307,10 +306,12 @@ router.post('/order/total', oauth.authorise(), (req, res, next) => {
                     "LEFT OUTER JOIN customer_master cm on om.om_cm_id = cm.cm_id "+
                     "LEFT OUTER JOIN table_master tm on om.om_tm_id = tm.tm_id "+
                     "LEFT OUTER JOIN area_master am on tm.tm_am_id=am.am_id "+ 
+                    "LEFT OUTER JOIN restaurant_master srm on om.om_srm_id=srm.srm_id "+
                     "where om.om_status=0 "+
-                    "and LOWER(om_no||''||om_amount||''||om_status_type) LIKE LOWER($1)";
+                    "and om_srm_id=$1 "+
+                    "and LOWER(om_no||''||om_amount||''||om_status_type) LIKE LOWER($2)";
       
-    const query = client.query(strqry,[str]);
+    const query = client.query(strqry,[req.body.om_srm_id,str]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -339,12 +340,14 @@ router.post('/order/limit', oauth.authorise(), (req, res, next) => {
                     "LEFT OUTER JOIN customer_master cm on om.om_cm_id = cm.cm_id "+
                     "LEFT OUTER JOIN table_master tm on om.om_tm_id = tm.tm_id "+
                     "LEFT OUTER JOIN area_master am on tm.tm_am_id=am.am_id "+ 
+                    "LEFT OUTER JOIN restaurant_master srm on om.om_srm_id=srm.srm_id "+
                     "where om.om_status=0 "+
-                    "and LOWER(om_no||''||om_amount||''||om_status_type) LIKE LOWER($1) "+
-                    "order by om.om_id desc LIMIT $2 OFFSET $3";
+                    "and om_srm_id=$1 "+
+                    "and LOWER(om_no||''||om_amount||''||om_status_type) LIKE LOWER($2) "+
+                    "order by om.om_id desc LIMIT $3 OFFSET $4";
 
     // SQL Query > Select Data
-    const query = client.query(strqry,[ str, req.body.number, req.body.begin]);
+    const query = client.query(strqry,[ req.body.om_srm_id, str, req.body.number, req.body.begin]);
     query.on('row', (row) => {
       results.push(row);
     });

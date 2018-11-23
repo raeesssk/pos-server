@@ -29,6 +29,37 @@ router.get('/', oauth.authorise(), (req, res, next) => {
   });
 });
 
+router.post('/checkname', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+
+    // SQL Query > Select Data
+    const strqry =  "SELECT * "+
+                    "from customer_master cm "+
+                    "inner join restaurant_master srm on cm.cm_srm_id=srm.srm_id "+
+                    "where cm_status=0 "+
+                    "and cm_srm_id = $1 "+
+                    "and LOWER(cm_name) like LOWER($2)";
+    const query = client.query(strqry,[req.body.cm_srm_id,req.body.cm_name]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+    done(err);
+  });
+});
+
+
 router.get('/:custId', oauth.authorise(), (req, res, next) => {
   const results = [];
   const id = req.params.custId;
@@ -88,8 +119,8 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
       return res.status(500).json({success: false, data: err});
     }
 
-    var singleInsert = 'INSERT INTO customer_master(cm_name,cm_mobile,cm_address,cm_pin,cm_status) values($1,$2,$3,$4,0) RETURNING *',
-        params = [req.body.cm_name,req.body.cm_mobile,req.body.cm_address,req.body.cm_pin]
+    var singleInsert = 'INSERT INTO customer_master(cm_name,cm_mobile,cm_address,cm_pin,cm_srm_id,cm_status) values($1,$2,$3,$4,$5,0) RETURNING *',
+        params = [req.body.cm_name,req.body.cm_mobile,req.body.cm_address,req.body.cm_pin,req.body.cm_srm_id]
     client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
         done();
@@ -104,7 +135,6 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
 router.post('/edit/:custId', oauth.authorise(), (req, res, next) => {
   const results = [];
   const id = req.params.custId;
-  const product = req.body.product;
   pool.connect(function(err, client, done){
     if(err) {
       done();
@@ -213,11 +243,13 @@ router.post('/customer/total', oauth.authorise(), (req, res, next) => {
 
     console.log(str);
     const strqry =  "SELECT count(cm_id) as total "+
-                    "from customer_master "+
+                    "from customer_master cm "+
+                    "inner join restaurant_master srm on cm.cm_srm_id=srm.srm_id "+
                     "where cm_status=0 "+
-                    "and LOWER(cm_name||''||cm_mobile||''||cm_address||''||cm_pin) LIKE LOWER($1);";
+                    "and cm_srm_id = $1 "+
+                    "and LOWER(cm_name||''||cm_mobile||''||cm_address||''||cm_pin) LIKE LOWER($2);";
 
-    const query = client.query(strqry,[str]);
+    const query = client.query(strqry,[req.body.cm_srm_id,str]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -242,13 +274,15 @@ router.post('/customer/limit', oauth.authorise(), (req, res, next) => {
     const str = "%"+req.body.search+"%";
     // SQL Query > Select Data
 
-    const strqry =  "SELECT cm.cm_id, cm.cm_name, cm.cm_mobile, cm.cm_address, cm.cm_pin "+
+    const strqry =  "SELECT *"+
                     "FROM CUSTOMER_MASTER cm "+
+                    "inner join restaurant_master srm on cm.cm_srm_id=srm.srm_id "+
                     "where cm.cm_status = 0 "+
-                    "and LOWER(cm_name||''||cm_mobile||''||cm_address||''||cm_pin ) LIKE LOWER($1) "+
-                    "order by cm.cm_id desc LIMIT $2 OFFSET $3";
+                    "and cm_srm_id = $1 "+
+                    "and LOWER(cm_name||''||cm_mobile||''||cm_address||''||cm_pin ) LIKE LOWER($2) "+
+                    "order by cm.cm_id desc LIMIT $3 OFFSET $4";
 
-    const query = client.query(strqry,[ str, req.body.number, req.body.begin]);
+    const query = client.query(strqry,[req.body.cm_srm_id ,str, req.body.number, req.body.begin]);
     query.on('row', (row) => {
       results.push(row);
     });

@@ -7,6 +7,30 @@ var config = require('../config.js');
 
 var pool = new pg.Pool(config);
 
+router.get('/', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  const id = req.params.ctmId;
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    // SQL Query > Select Data
+    const query = client.query('SELECT * FROM table_master tm LEFT OUTER JOIN area_master am on tm.tm_am_id = am.am_id where tm.tm_status=0 order by tm_id asc');
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+  done(err);
+  });
+});
+
 router.get('/:ctmId', oauth.authorise(), (req, res, next) => {
   const results = [];
   const id = req.params.ctmId;

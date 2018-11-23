@@ -92,31 +92,37 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
     
       if(purchaseSingleData.prm_credit == "credit")
       {
-        const singleInsert = client.query('INSERT INTO public.purchase_master( prm_invoice_no, prm_date, prm_dm_id, prm_amount, prm_credit, prm_payment_date, prm_comment, prm_username, prm_status)VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0)',[purchaseSingleData.prm_invoice_no,purchaseSingleData.prm_date,purchaseSingleData.prm_dm_id.dm_id,purchaseSingleData.prm_amount,purchaseSingleData.prm_credit,purchaseSingleData.prm_payment_date,purchaseSingleData.prm_comment,purchaseSingleData.prm_username]);
+        const singleInsert = client.query('INSERT INTO public.purchase_master( prm_invoice_no, prm_date, prm_dm_id, prm_amount, prm_credit, prm_payment_date, prm_comment, prm_username, prm_srm_id, prm_status)VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0)',
+          [purchaseSingleData.prm_invoice_no,purchaseSingleData.prm_date,purchaseSingleData.prm_dm_id.dm_id,purchaseSingleData.prm_amount,purchaseSingleData.prm_credit,purchaseSingleData.prm_payment_date,purchaseSingleData.prm_comment,purchaseSingleData.prm_username,purchaseSingleData.prm_srm_id]);
         
         const debit = purchaseSingleData.prm_dm_id.dm_debit;
         const amount = purchaseSingleData.prm_amount;
         if(debit > amount)
         {
-          client.query('update dealer_master set dm_debit=dm_debit-$1 where dm_id=$2',[amount,purchaseSingleData.prm_dm_id.dm_id]);
+          client.query('update dealer_master set dm_debit=dm_debit-$1 where dm_id=$2',
+            [amount,purchaseSingleData.prm_dm_id.dm_id]);
         }
         else
         {
           const credit = amount - debit;
-          client.query('update dealer_master set dm_credit=dm_credit+$1, dm_debit=dm_debit-$2 where dm_id=$3',[credit,debit,purchaseSingleData.prm_dm_id.dm_id]);
+          client.query('update dealer_master set dm_credit=dm_credit+$1, dm_debit=dm_debit-$2 where dm_id=$3',
+            [credit,debit,purchaseSingleData.prm_dm_id.dm_id]);
         }
 
     }
     else{
-      client.query('INSERT INTO public.purchase_master( prm_invoice_no, prm_date, prm_dm_id, prm_amount, prm_credit, prm_comment, prm_username, prm_status)VALUES ($1, $2, $3, $4, $5, $6, $7, 0)',[purchaseSingleData.prm_invoice_no,purchaseSingleData.prm_date,purchaseSingleData.prm_dm_id.dm_id,purchaseSingleData.prm_amount,purchaseSingleData.prm_credit,purchaseSingleData.prm_comment,purchaseSingleData.prm_username]);
+      client.query('INSERT INTO public.purchase_master( prm_invoice_no, prm_date, prm_dm_id, prm_amount, prm_credit, prm_comment, prm_username,prm_srm_id, prm_status)VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0)',
+        [purchaseSingleData.prm_invoice_no,purchaseSingleData.prm_date,purchaseSingleData.prm_dm_id.dm_id,purchaseSingleData.prm_amount,purchaseSingleData.prm_credit,purchaseSingleData.prm_comment,purchaseSingleData.prm_username,purchaseSingleData.prm_srm_id]);
     }
     const query = client.query("SELECT * from purchase_master order by prm_id desc limit 1;");
     query.on('row', (row) => {
       // console.log(purchaseMultipleData);
       purchaseMultipleData.forEach(function(product, index) {
 
-        const va = client.query('INSERT INTO public.purchase_product_master(ppm_prm_id, ppm_im_id, ppm_qty, ppm_rate)VALUES ($1, $2, $3, $4)',[row.prm_id,product.im_search.im_id,product.ppm_qty,product.ppm_rate]);
-        client.query('UPDATE inventory_master set im_quantity = im_quantity + $1 where im_id = $2',[product.ppm_qty,product.im_search.im_id]);
+        const va = client.query('INSERT INTO public.purchase_product_master(ppm_prm_id, ppm_im_id, ppm_qty, ppm_rate)VALUES ($1, $2, $3, $4)',
+          [row.prm_id,product.im_search.im_id,product.ppm_qty,product.ppm_rate]);
+        client.query('UPDATE inventory_master set im_quantity = im_quantity + $1 where im_id = $2',
+          [product.ppm_qty,product.im_search.im_id]);
       });
     });
     query.on('end', () => {
@@ -317,10 +323,12 @@ router.post('/purchase/total', oauth.authorise(), (req, res, next) => {
     const strqry =  "SELECT count(prm_id) as total "+
                     "from purchase_master prm "+
                     "LEFT OUTER JOIN dealer_master dm on prm.prm_dm_id = dm.dm_id "+
+                    "inner join restaurant_master srm on prm.prm_srm_id=srm.srm_id "+
                     "where prm.prm_status = 0 "+
-                    "and LOWER(dm_firm_name||''||prm_payment_date) LIKE LOWER($1) ";
+                    "and prm_srm_id = $1 "+
+                    "and LOWER(dm_firm_name||''||prm_payment_date) LIKE LOWER($2) ";
 
-    const query = client.query(strqry,[str]);
+    const query = client.query(strqry,[req.body.prm_srm_id,str]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -348,11 +356,13 @@ router.post('/purchase/limit', oauth.authorise(), (req, res, next) => {
     const strqry =  "SELECT * "+
                     "FROM purchase_master prm "+
                     "LEFT OUTER JOIN dealer_master dm on prm.prm_dm_id = dm.dm_id "+
+                    "inner join restaurant_master srm on prm.prm_srm_id=srm.srm_id "+
                     "where prm.prm_status = 0 "+
-                    "and LOWER(dm_firm_name||''||prm_payment_date) LIKE LOWER($1) "+
-                    "order by prm.prm_id desc LIMIT $2 OFFSET $3";
+                    "and prm_srm_id = $1 "+
+                    "and LOWER(dm_firm_name||''||prm_payment_date) LIKE LOWER($2) "+
+                    "order by prm.prm_id desc LIMIT $3 OFFSET $4";
 
-    const query = client.query(strqry,[ str, req.body.number, req.body.begin]);
+    const query = client.query(strqry,[req.body.prm_srm_id, str, req.body.number, req.body.begin]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -364,5 +374,7 @@ router.post('/purchase/limit', oauth.authorise(), (req, res, next) => {
     done(err);
   });
 });
+
+
 
 module.exports = router;

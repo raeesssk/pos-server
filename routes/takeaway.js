@@ -34,8 +34,8 @@ router.post('/delivery', oauth.authorise(), (req, res, next) => {
       if(results.length>0){
         no=results[0].om_no + 1;
       }
-      var singleInsert = 'INSERT INTO order_master(om_no,om_where,om_amount,om_net_amount,om_cgst_amount,om_sgst_amount,om_igst_amount,om_cgst_per,om_sgst_per,om_igst_per,om_status) values($1,$2,$3,0,0,0,0,0,0,0,0) RETURNING *',
-        params = [no,order.om_where,order.om_total]
+      var singleInsert = 'INSERT INTO order_master(om_no,om_where,om_amount,om_srm_id,om_net_amount,om_cgst_amount,om_sgst_amount,om_igst_amount,om_cgst_per,om_sgst_per,om_igst_per,om_status) values($1,$2,$3,$4,0,0,0,0,0,0,0,0) RETURNING *',
+        params = [no,order.om_where,order.om_total,order.srm_id]
         client.query(singleInsert, params, function (error, result) {
         data.push(result.rows[0]); 
     	orderMultipleData.forEach(function(product, index) {
