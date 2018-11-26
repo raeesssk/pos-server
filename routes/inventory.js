@@ -234,12 +234,13 @@ router.post('/typeahead/search', oauth.authorise(), (req, res, next) => {
     const str = "%"+req.body.search+"%";
     // SQL Query > Select Data
 
-    const strqry =  "SELECT * "+
+    const strqry =  "SELECT *,im_name||' '||um_name as im_search "+
                     "from inventory_master im "+
+                    "LEFT OUTER JOIN unit_master um on im.im_um_id = um.um_id "+
                     "inner join restaurant_master srm on im.im_srm_id=srm.srm_id "+
                     "where im_status=0 "+
                     "and im_srm_id = $1 "+
-                    "and LOWER(im_name) LIKE LOWER($2) "+
+                    "and LOWER(im_name||' '||um_name) LIKE LOWER($2) "+
                     "order by im.im_id desc LIMIT 10";
 
     const query = client.query(strqry,[req.body.im_srm_id, str]);

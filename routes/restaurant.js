@@ -88,15 +88,31 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
         console.log("the error is"+err);
         return res.status(500).json({success: false, data: err});
       }
+      client.query('BEGIN;');
+      if(req.body.srm_checkgst == true)
+      {
+        var singleInsert = 'INSERT INTO restaurant_master(srm_restaurant_name,srm_country,srm_address,srm_landmark,srm_area,srm_city,srm_pincode,srm_state,srm_currency,srm_contact_name,srm_contact_number,srm_email,srm_image,srm_user_id,srm_day_start_time,srm_day_end_time,srm_night_start_time,srm_night_end_time,srm_isnight,srm_gst_no,srm_gst_per) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING *',
+            params = [req.body.srm_restaurant_name,req.body.srm_country,req.body.srm_address,req.body.srm_landmark,req.body.srm_area,req.body.srm_city,req.body.srm_pincode,req.body.srm_state,req.body.srm_currency,req.body.srm_contact_name,req.body.srm_contact_number,req.body.srm_email,filenamestore,req.body.srm_user_id,req.body.srm_day_start_time,req.body.srm_day_end_time,req.body.srm_night_start_time,req.body.srm_night_end_time,req.body.srm_isnight,req.body.srm_gst_no,req.body.srm_gst_per]
+        client.query(singleInsert, params, function (error, result) {
+            results.push(result.rows[0]); // Will contain your inserted rows
 
-      var singleInsert = 'INSERT INTO restaurant_master(srm_restaurant_name,srm_country,srm_address,srm_landmark,srm_area,srm_city,srm_pincode,srm_state,srm_currency,srm_contact_name,srm_contact_number,srm_email,srm_image,srm_user_id,srm_day_start_time,srm_day_end_time,srm_night_start_time,srm_night_end_time,srm_isnight) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *',
-          params = [req.body.srm_restaurant_name,req.body.srm_country,req.body.srm_address,req.body.srm_landmark,req.body.srm_area,req.body.srm_city,req.body.srm_pincode,req.body.srm_state,req.body.srm_currency,req.body.srm_contact_name,req.body.srm_contact_number,req.body.srm_email,filenamestore,req.body.srm_user_id,req.body.srm_day_start_time,req.body.srm_day_end_time,req.body.srm_night_start_time,req.body.srm_night_end_time,req.body.srm_isnight]
-      client.query(singleInsert, params, function (error, result) {
-          results.push(result.rows[0]); // Will contain your inserted rows
-          done();
-          return res.json(results);
-      });
+            client.query('COMMIT;');
+            done();
+            return res.json(results);
+        });
+      }
+      else
+      {
+        var singleInsert = 'INSERT INTO restaurant_master(srm_restaurant_name,srm_country,srm_address,srm_landmark,srm_area,srm_city,srm_pincode,srm_state,srm_currency,srm_contact_name,srm_contact_number,srm_email,srm_image,srm_user_id,srm_day_start_time,srm_day_end_time,srm_night_start_time,srm_night_end_time,srm_isnight) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *',
+            params = [req.body.srm_restaurant_name,req.body.srm_country,req.body.srm_address,req.body.srm_landmark,req.body.srm_area,req.body.srm_city,req.body.srm_pincode,req.body.srm_state,req.body.srm_currency,req.body.srm_contact_name,req.body.srm_contact_number,req.body.srm_email,filenamestore,req.body.srm_user_id,req.body.srm_day_start_time,req.body.srm_day_end_time,req.body.srm_night_start_time,req.body.srm_night_end_time,req.body.srm_isnight]
+        client.query(singleInsert, params, function (error, result) {
+            results.push(result.rows[0]); // Will contain your inserted rows
 
+            client.query('COMMIT;');
+            done();
+            return res.json(results);
+        });
+      }
       done(err);
     });
   }); 

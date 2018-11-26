@@ -149,6 +149,7 @@ router.post('/edit/:omId', oauth.authorise(), (req, res, next) => {
 });
 router.post('/placeorder', oauth.authorise(), (req, res, next) => {
   const results = [];
+  const arr = [];
   const orderMultipleData=req.body.list;
   const order = req.body.obj;
   pool.connect(function(err, client, done){
@@ -163,13 +164,25 @@ router.post('/placeorder', oauth.authorise(), (req, res, next) => {
       orderMultipleData.forEach(function(product, index) {
       client.query('INSERT INTO order_product_master(opm_om_id, opm_pm_id, opm_quantity, opm_rate, opm_total) values($1,$2,$3,$4,$5) RETURNING *',
       [order.om_id,product.pm_id,product.quantity,product.price,product.total]);
-         
+       
+      const query = client.query('select * from recipe_master where rm_status=0 and rm_pm_id=$1',[product.pm_id]);
+      query.on('row', (row) => {
+        arr.push(row);
+       });
+      query.on('end', () => {
+        done();
+        arr.forEach(function(value,key){
+          client.query('update inventory_master set im_quantity = im_quantity - $1 where im_id=$2',[value.rm_quantity,value.rm_im_id]);
+        });
+        // pg.end();
+      });
     });
       var singleInsert = 'UPDATE order_master SET om_amount=om_amount + $1 WHERE om_id=$2 RETURNING *',
       params=[order.om_total,order.om_id]
       client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
         
+      
         client.query('COMMIT;');
         done();
         return res.json(results);

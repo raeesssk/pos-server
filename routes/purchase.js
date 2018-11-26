@@ -7,7 +7,7 @@ var config = require('../config.js');
 
 var pool = new pg.Pool(config);
 
-router.get('/', oauth.authorise(), (req, res, next) => {
+router.get('/', (req, res, next) => {
   const results = [];
   pool.connect(function(err, client, done){
     if(err) {
@@ -118,11 +118,11 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
     query.on('row', (row) => {
       // console.log(purchaseMultipleData);
       purchaseMultipleData.forEach(function(product, index) {
-
+        console.log(product);
         const va = client.query('INSERT INTO public.purchase_product_master(ppm_prm_id, ppm_im_id, ppm_qty, ppm_rate)VALUES ($1, $2, $3, $4)',
-          [row.prm_id,product.im_search.im_id,product.ppm_qty,product.ppm_rate]);
+          [row.prm_id,product.ppm_im_id.im_id,product.ppm_qty,product.ppm_rate]);
         client.query('UPDATE inventory_master set im_quantity = im_quantity + $1 where im_id = $2',
-          [product.ppm_qty,product.im_search.im_id]);
+          [product.ppm_qty,product.ppm_im_id.im_id]);
       });
     });
     query.on('end', () => {
@@ -326,7 +326,7 @@ router.post('/purchase/total', oauth.authorise(), (req, res, next) => {
                     "inner join restaurant_master srm on prm.prm_srm_id=srm.srm_id "+
                     "where prm.prm_status = 0 "+
                     "and prm_srm_id = $1 "+
-                    "and LOWER(dm_firm_name||''||prm_payment_date) LIKE LOWER($2) ";
+                    "and LOWER(dm_firm_name) LIKE LOWER($2) ";
 
     const query = client.query(strqry,[req.body.prm_srm_id,str]);
     query.on('row', (row) => {
@@ -359,7 +359,7 @@ router.post('/purchase/limit', oauth.authorise(), (req, res, next) => {
                     "inner join restaurant_master srm on prm.prm_srm_id=srm.srm_id "+
                     "where prm.prm_status = 0 "+
                     "and prm_srm_id = $1 "+
-                    "and LOWER(dm_firm_name||''||prm_payment_date) LIKE LOWER($2) "+
+                    "and LOWER(dm_firm_name) LIKE LOWER($2) "+
                     "order by prm.prm_id desc LIMIT $3 OFFSET $4";
 
     const query = client.query(strqry,[req.body.prm_srm_id, str, req.body.number, req.body.begin]);
