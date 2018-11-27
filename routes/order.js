@@ -104,7 +104,7 @@ router.post('/check', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    const query = client.query("SELECT * FROM order_master where om_tm_id =$1",[req.body.tm_id]);
+    const query = client.query("SELECT * FROM order_master where om_status_type like 'open' and om_tm_id =$1",[req.body.tm_id]);
     query.on('row', (row) => {
       results.push(row);
     });
@@ -162,20 +162,28 @@ router.post('/placeorder', oauth.authorise(), (req, res, next) => {
     // SQL Query > Insert Data
     client.query('BEGIN;');
       orderMultipleData.forEach(function(product, index) {
-      client.query('INSERT INTO order_product_master(opm_om_id, opm_pm_id, opm_quantity, opm_rate, opm_total) values($1,$2,$3,$4,$5) RETURNING *',
-      [order.om_id,product.pm_id,product.quantity,product.price,product.total]);
+      client.query('INSERT INTO order_product_master(opm_om_id, opm_pm_id, opm_quantity, opm_rate, opm_total, opm_half) values($1,$2,$3,$4,$5,$6) RETURNING *',
+      [order.om_id,product.pm_id,product.quantity,product.price,product.total,product.opm_half]);
        
-      const query = client.query('select * from recipe_master where rm_status=0 and rm_pm_id=$1',[product.pm_id]);
-      query.on('row', (row) => {
-        arr.push(row);
-       });
-      query.on('end', () => {
-        done();
-        arr.forEach(function(value,key){
-          client.query('update inventory_master set im_quantity = im_quantity - $1 where im_id=$2',[value.rm_quantity,value.rm_im_id]);
-        });
-        // pg.end();
-      });
+      // const query = client.query('select * from recipe_master rm inner join product_master pm on rm.rm_pm_id=pm.pm_id where rm_status=0 and rm_pm_id=$1',[product.pm_id]);
+      // query.on('row', (row) => {
+      //   arr.push(row);
+      //  });
+
+      // query.on('end', () => {
+      //   done();
+      //   arr.forEach(function(value,key){
+      //     if(value.pm_half > 0)
+      //     {
+      //       client.query('update inventory_master set im_quantity = im_quantity - $1 where im_id=$2',[value.rm_quantity_half,value.rm_im_id]);
+      //     }
+      //     else
+      //     {
+      //       client.query('update inventory_master set im_quantity = im_quantity - $1 where im_id=$2',[value.rm_quantity,value.rm_im_id]);
+      //     }
+      //   });
+      //   // pg.end();
+      // });
     });
       var singleInsert = 'UPDATE order_master SET om_amount=om_amount + $1 WHERE om_id=$2 RETURNING *',
       params=[order.om_total,order.om_id]

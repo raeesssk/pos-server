@@ -88,8 +88,8 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
       return res.status(500).json({success: false, data: err});
     }
 
-    var singleInsert = 'INSERT INTO recipe_master(rm_pm_id, rm_im_id, rm_quantity, rm_srm_id, rm_status) values($1,$2,$3,$4,0) RETURNING *',
-        params = [req.body.rm_pm_id.pm_id,req.body.rm_im_id.im_id,req.body.rm_quantity,req.body.rm_srm_id]
+    var singleInsert = 'INSERT INTO recipe_master(rm_pm_id, rm_im_id, rm_quantity, rm_srm_id, rm_quantity_half, rm_status) values($1,$2,$3,$4,$5,0) RETURNING *',
+        params = [req.body.rm_pm_id.pm_id,req.body.rm_im_id.im_id,req.body.rm_quantity,req.body.rm_srm_id,req.body.rm_quantity_half]
       
     client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
@@ -141,8 +141,8 @@ router.post('/edit/:ctmId', oauth.authorise(), (req, res, next) => {
 
     client.query('BEGIN;');
 
-    var singleInsert = 'UPDATE recipe_master SET rm_pm_id=$1,rm_im_id=$2,rm_quantity=$3,rm_updated_at=now() where rm_id=$4 RETURNING *',
-        params = [req.body.rm_pm.pm_id,req.body.rm_im.im_id,req.body.rm_quantity,id]
+    var singleInsert = 'UPDATE recipe_master SET rm_pm_id=$1,rm_im_id=$2,rm_quantity=$3,rm_quantity_half=$4,rm_updated_at=now() where rm_id=$5 RETURNING *',
+        params = [req.body.rm_pm.pm_id,req.body.rm_im.im_id,req.body.rm_quantity,req.body.rm_quantity_half,id]
     client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
         done();

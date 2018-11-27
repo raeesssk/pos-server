@@ -147,8 +147,8 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
         return res.status(500).json({success: false, data: err});
       }
 
-      var singleInsert = 'INSERT INTO product_master(pm_description, pm_ctm_id, pm_dish_no, pm_expected_in, pm_srm_id, pm_status) values($1,$2,$3,$4,$5,0) RETURNING *',
-          params = [product.pm_description,product.pm_ctm_id.ctm_id,product.pm_dish_no,product.pm_expected_in,product.pm_srm_id]
+      var singleInsert = 'INSERT INTO product_master(pm_description, pm_ctm_id, pm_dish_no, pm_expected_in, pm_srm_id,pm_half, pm_status) values($1,$2,$3,$4,$5,$6,0) RETURNING *',
+          params = [product.pm_description,product.pm_ctm_id.ctm_id,product.pm_dish_no,product.pm_expected_in,product.pm_srm_id,product.pm_half]
      
           client.query(singleInsert, params, function (error, result) {
           results.push(result.rows[0]); // Will contain your inserted rows
@@ -231,8 +231,8 @@ router.post('/edit/:productId', oauth.authorise(), (req, res, next) => {
     }
     client.query('BEGIN;');
     
-    var singleInsert = 'update product_master set pm_description=$1, pm_ctm_id=$2, pm_dish_no=$3, pm_expected_in=$4, pm_updated_at=now() where pm_id=$5 RETURNING *',
-        params = [product.pm_description,product.pm_ctm.ctm_id,product.pm_dish_no,product.pm_expected_in,id];
+    var singleInsert = 'update product_master set pm_description=$1, pm_ctm_id=$2, pm_dish_no=$3, pm_expected_in=$4, pm_half=$5, pm_updated_at=now() where pm_id=$6 RETURNING *',
+        params = [product.pm_description,product.pm_ctm.ctm_id,product.pm_dish_no,product.pm_expected_in,product.pm_half,id];
     client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
         
