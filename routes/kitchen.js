@@ -17,7 +17,7 @@ router.post('/pending',  (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    const query = client.query("SELECT * FROM order_product_master opm INNER JOIN order_master om on opm.opm_om_id = om.om_id INNER JOIN product_master pm on opm.opm_pm_id=pm.pm_id LEFT OUTER JOIN table_master tm on om.om_tm_id=tm.tm_id LEFT OUTER JOIN area_master am on tm.tm_am_id=am.am_id left outer join restaurant_master srm on pm.pm_srm_id=srm.srm_id order by opm.opm_id desc");
+    const query = client.query("SELECT * FROM order_product_master opm INNER JOIN order_master om on opm.opm_om_id = om.om_id INNER JOIN product_master pm on opm.opm_pm_id=pm.pm_id LEFT OUTER JOIN table_master tm on om.om_tm_id=tm.tm_id LEFT OUTER JOIN area_master am on tm.tm_am_id=am.am_id left outer join restaurant_master srm on pm.pm_srm_id=srm.srm_id where opm_created_at::date = CURRENT_DATE  order by opm.opm_id desc");
     
     query.on('row', (row) => {
       results.push(row);
@@ -55,7 +55,6 @@ router.post('/order/update', oauth.authorise(), (req, res, next) => {
         });
         query.on('end', () => { 
           arr.forEach(function(value,key){
-            console.log(value);
           if(value.pm_half > 0)
           {
             client.query('update inventory_master set im_quantity = im_quantity - $1 where im_id=$2',[value.rm_quantity_half,value.rm_im_id]);
@@ -108,7 +107,7 @@ router.post('/complete', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    const query = client.query("SELECT * FROM order_product_master opm INNER JOIN order_master om on opm.opm_om_id = om.om_id INNER JOIN product_master pm on opm.opm_pm_id=pm.pm_id LEFT OUTER JOIN table_master tm on om.om_tm_id=tm.tm_id LEFT OUTER JOIN area_master am on tm.tm_am_id=am.am_id left outer join restaurant_master srm on pm.pm_srm_id=srm.srm_id where opm.opm_status_type='completed' order by opm.opm_id desc");
+    const query = client.query("SELECT * FROM order_product_master opm INNER JOIN order_master om on opm.opm_om_id = om.om_id INNER JOIN product_master pm on opm.opm_pm_id=pm.pm_id LEFT OUTER JOIN table_master tm on om.om_tm_id=tm.tm_id LEFT OUTER JOIN area_master am on tm.tm_am_id=am.am_id left outer join restaurant_master srm on pm.pm_srm_id=srm.srm_id where opm.opm_status_type='completed' and opm_created_at::date = CURRENT_DATE  order by opm.opm_id desc");
     query.on('row', (row) => {
       results.push(row);
     });

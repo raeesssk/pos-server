@@ -61,7 +61,7 @@ router.get('/:srmId', oauth.authorise(), (req, res, next) => {
 
 router.post('/add', oauth.authorise(), (req, res, next) => {
   const results = [];
-  
+  console.log(req.body);
   var Storage = multer.diskStorage({
       destination: function (req, file, callback) {
           // callback(null, "./images");
@@ -89,30 +89,16 @@ router.post('/add', oauth.authorise(), (req, res, next) => {
         return res.status(500).json({success: false, data: err});
       }
       client.query('BEGIN;');
-      if(req.body.srm_checkgst == true)
-      {
-        var singleInsert = 'INSERT INTO restaurant_master(srm_restaurant_name,srm_country,srm_address,srm_landmark,srm_area,srm_city,srm_pincode,srm_state,srm_currency,srm_contact_name,srm_contact_number,srm_email,srm_image,srm_user_id,srm_day_start_time,srm_day_end_time,srm_night_start_time,srm_night_end_time,srm_isnight,srm_gst_no,srm_gst_per) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING *',
-            params = [req.body.srm_restaurant_name,req.body.srm_country,req.body.srm_address,req.body.srm_landmark,req.body.srm_area,req.body.srm_city,req.body.srm_pincode,req.body.srm_state,req.body.srm_currency,req.body.srm_contact_name,req.body.srm_contact_number,req.body.srm_email,filenamestore,req.body.srm_user_id,req.body.srm_day_start_time,req.body.srm_day_end_time,req.body.srm_night_start_time,req.body.srm_night_end_time,req.body.srm_isnight,req.body.srm_gst_no,req.body.srm_gst_per]
+        var singleInsert = 'INSERT INTO restaurant_master(srm_restaurant_name,srm_country,srm_address,srm_landmark,srm_area,srm_city,srm_pincode,srm_state,srm_currency,srm_contact_name,srm_contact_number,srm_email,srm_image,srm_day_start_time,srm_day_end_time,srm_night_start_time,srm_night_end_time,srm_isnight,srm_checkgst,srm_gst_no,srm_gst_per) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING *',
+            params = [req.body.srm_restaurant_name,req.body.srm_country,req.body.srm_address,req.body.srm_landmark,req.body.srm_area,req.body.srm_city,req.body.srm_pincode,req.body.srm_state,req.body.srm_currency,req.body.srm_contact_name,req.body.srm_contact_number,req.body.srm_email,filenamestore,req.body.srm_day_start_time,req.body.srm_day_end_time,req.body.srm_night_start_time,req.body.srm_night_end_time,req.body.srm_isnight,req.body.srm_check,req.body.srm_gst_no,req.body.srm_gst_per]
+        console.log(params);
         client.query(singleInsert, params, function (error, result) {
             results.push(result.rows[0]); // Will contain your inserted rows
-
+            client.query("update users set user_srm_id = $1,first_name=$2 where id = $3",[result.rows[0].srm_id,result.rows[0].srm_contact_name,req.body.srm_user_id])
             client.query('COMMIT;');
             done();
             return res.json(results);
         });
-      }
-      else
-      {
-        var singleInsert = 'INSERT INTO restaurant_master(srm_restaurant_name,srm_country,srm_address,srm_landmark,srm_area,srm_city,srm_pincode,srm_state,srm_currency,srm_contact_name,srm_contact_number,srm_email,srm_image,srm_user_id,srm_day_start_time,srm_day_end_time,srm_night_start_time,srm_night_end_time,srm_isnight) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *',
-            params = [req.body.srm_restaurant_name,req.body.srm_country,req.body.srm_address,req.body.srm_landmark,req.body.srm_area,req.body.srm_city,req.body.srm_pincode,req.body.srm_state,req.body.srm_currency,req.body.srm_contact_name,req.body.srm_contact_number,req.body.srm_email,filenamestore,req.body.srm_user_id,req.body.srm_day_start_time,req.body.srm_day_end_time,req.body.srm_night_start_time,req.body.srm_night_end_time,req.body.srm_isnight]
-        client.query(singleInsert, params, function (error, result) {
-            results.push(result.rows[0]); // Will contain your inserted rows
-
-            client.query('COMMIT;');
-            done();
-            return res.json(results);
-        });
-      }
       done(err);
     });
   }); 

@@ -7,6 +7,27 @@ var config = require('../config.js');
 
 var pool = new pg.Pool(config);
 
+router.get('/', (req, res, next) => {
+  const results = [];
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const query = client.query("SELECT * FROM order_master om left outer join order_product_master opm on opm.opm_om_id=om.om_id where opm_status_type='completed'");
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+  done(err);
+  });
+});
 
 router.post('/add', oauth.authorise(), (req, res, next) => {
   const results = [];
@@ -381,7 +402,7 @@ router.post('/order/limit', oauth.authorise(), (req, res, next) => {
   });
 });
 
-router.post('/order/status', oauth.authorise(), (req, res, next) => {
+router.post('/order/close', oauth.authorise(), (req, res, next) => {
   const results = [];
   pool.connect(function(err, client, done){
     if(err) {

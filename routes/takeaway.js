@@ -39,13 +39,36 @@ router.post('/delivery', oauth.authorise(), (req, res, next) => {
         client.query(singleInsert, params, function (error, result) {
         data.push(result.rows[0]); 
     	orderMultipleData.forEach(function(product, index) {
-      	client.query('INSERT INTO order_product_master(opm_om_id, opm_pm_id, opm_quantity, opm_rate, opm_total) values($1,$2,$3,$4,$5) RETURNING *',
-      	[result.rows[0].om_id,product.pm_id,product.quantity,product.pm_rate,product.total]);
-        });
+      	client.query('INSERT INTO order_product_master(opm_om_id, opm_pm_id, opm_quantity, opm_rate, opm_total,opm_half) values($1,$2,$3,$4,$5,$6) RETURNING *',
+      	[result.rows[0].om_id,product.pm_id,product.quantity,product.price,product.total,product.opm_half]);
+      });
         // Will contain your inserted rows
         done();
         return res.json(data);
       });
+    });
+    done(err);
+  });
+});
+
+router.post('/items', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const query = client.query("SELECT * from product_master pm inner join product_price_master ppm on ppm.ppm_pm_id=pm.pm_id left outer join area_master am on ppm.ppm_am_id=am.am_id where pm_ctm_id=$1 and am_name = 'Takeaway' order by pm_id ASC",[req.body.ctm_id]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
     });
     done(err);
   });
