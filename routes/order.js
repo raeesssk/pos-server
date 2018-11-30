@@ -422,6 +422,7 @@ router.post('/order/close', oauth.authorise(), (req, res, next) => {
     client.query(singleInsert, params, function (error, result) {
         results.push(result.rows[0]); // Will contain your inserted rows
         client.query("SELECT * from order_master om INNER JOIN customer_master cm on om.om_cm_id=cm.cm_id WHERE om_status_type='closed'");
+        client.query("update table_master set tm_isreserved = 0 where tm_id=$1 ",[result.rows[0].om_tm_id])
         client.query('COMMIT;');
         done();
         return res.json(results);
