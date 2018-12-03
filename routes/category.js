@@ -11,7 +11,7 @@ var filenamestore = "";
 
 var pool = new pg.Pool(config);
 
-router.get('/', oauth.authorise(), (req, res, next) => {
+router.post('/', oauth.authorise(), (req, res, next) => {
   const results = [];
   pool.connect(function(err, client, done){
     if(err) {
@@ -20,19 +20,41 @@ router.get('/', oauth.authorise(), (req, res, next) => {
       console.log("the error is"+err);
       return res.status(500).json({success: false, data: err});
     }
-    // SQL Query > Select Data
-    const query = client.query('SELECT * FROM category_master ctm left outer join restaurant_master srm on ctm.ctm_srm_id=srm.srm_id where ctm_status=0');
-    query.on('row', (row) => {
-      results.push(row);
+
+    var singleInsert = 'SELECT * FROM category_master ctm left outer join restaurant_master srm on ctm.ctm_srm_id=srm.srm_id where ctm_status=0 and ctm_srm_id=$1',
+        params = [req.body.ctm_srm_id]
+    client.query(singleInsert, params, function (error, result) {
+        results.push(result.rows[0]); // Will contain your inserted rows
+        done();
+        return res.json(results);
     });
-    query.on('end', () => {
-      done();
-      // pg.end();
-      return res.json(results);
-    });
-  done(err);
+
+    done(err);
   });
 });
+
+// router.post('/', oauth.authorise(), (req, res, next) => {
+//   const results = [];
+//   pool.connect(function(err, client, done){
+//     if(err) {
+//       done();
+//       // pg.end();
+//       console.log("the error is"+err);
+//       return res.status(500).json({success: false, data: err});
+//     }
+//     // SQL Query > Select Data
+//     const query = client.query('SELECT * FROM category_master ctm left outer join restaurant_master srm on ctm.ctm_srm_id=srm.srm_id where ctm_status=0 and ctm_srm_id=$1',[req.body.ctm_srm_id]);
+//     query.on('row', (row) => {
+//       results.push(row);
+//     });
+//     query.on('end', () => {
+//       done();
+//       // pg.end();
+//       return res.json(results);
+//     });
+//   done(err);
+//   });
+// });
 
 router.get('/:ctmId', oauth.authorise(), (req, res, next) => {
   const results = [];
