@@ -174,11 +174,11 @@ router.post('/image/:productId', oauth.authorise(), (req, res, next) => {
   var Storage = multer.diskStorage({
       destination: function (req, file, callback) {
           // callback(null, "./images");
-            callback(null, '../pos/resources/assets/img/allimages');
+            callback(null, "../nginx/html/images");
       },
       filename: function (req, file, callback) {
           var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
-          filenamestore = "../resources/assets/img"+fi;
+          filenamestore = "../images/"+fi;
           callback(null, fi);
       }
   });

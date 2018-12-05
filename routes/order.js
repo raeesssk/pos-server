@@ -351,7 +351,6 @@ router.post('/order/total', oauth.authorise(), (req, res, next) => {
                     "LEFT OUTER JOIN restaurant_master srm on om.om_srm_id=srm.srm_id "+
                     "where om.om_status=0 "+
                     "and om_created_at::date = CURRENT_DATE "+
-                    "and om.om_status_type='open' "+
                     "and om_srm_id=$1 "+
                     "and LOWER(om_no||''||om_amount||''||om_status_type) LIKE LOWER($2)";
       
@@ -387,7 +386,6 @@ router.post('/order/limit', oauth.authorise(), (req, res, next) => {
                     "LEFT OUTER JOIN restaurant_master srm on om.om_srm_id=srm.srm_id "+
                     "where om.om_status=0 "+
                     "and om_created_at::date = CURRENT_DATE "+
-                    "and om.om_status_type='open' "+
                     "and om_srm_id=$1 "+
                     "and LOWER(om_no||''||om_amount||''||om_status_type) LIKE LOWER($2) "+
                     "order by om.om_id desc LIMIT $3 OFFSET $4";

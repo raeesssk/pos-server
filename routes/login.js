@@ -318,12 +318,12 @@ router.post('/profile/image/:userId', oauth.authorise(), (req, res, next) => {
 
   var Storage = multer.diskStorage({
       destination: function (req, file, callback) {
-          // callback(null, "../nginx/html/images");
-          callback(null, "C:/xampp/htdocs/pos/resources/assets/img");
+          callback(null, "../nginx/html/images");
+          // callback(null, "C:/xampp/htdocs/pos/resources/assets/img");
       },
       filename: function (req, file, callback) {
           var fi = file.fieldname + "_" + Date.now() + "_" + file.originalname;
-          filenamestore = "./resources/assets/img/"+fi;
+          filenamestore = "../images/"+fi;
           callback(null, fi);
       }
   });
