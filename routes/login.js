@@ -318,7 +318,7 @@ router.post('/profile/image/:userId', oauth.authorise(), (req, res, next) => {
 
   var Storage = multer.diskStorage({
       destination: function (req, file, callback) {
-          callback(null, "../nginx/html/images");
+          callback(null, "../nginx/html/pos/images");
           // callback(null, "C:/xampp/htdocs/pos/resources/assets/img");
       },
       filename: function (req, file, callback) {
