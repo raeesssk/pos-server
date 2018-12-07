@@ -33,7 +33,7 @@ router.post('/', function(req, res, next) {
         }
       });
       let mailOptions = {
-        to: req.body.username,
+        to: "'"+req.body.username+"'",
         from: '3commastech@gmail.com',
         subject: 'Restromaticz User Password Reset',
         text: 'You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n' +
@@ -87,7 +87,6 @@ router.post('/reset/:tokenId',  (req, res, next) => {
     const query = client.query("SELECT * FROM tokens where reset_tokens=$1",[id]);
     query.on('row', (row) => {
       results.push(row);
-      console.log(results);
     });
     query.on('end', () => {
       done();
@@ -97,7 +96,6 @@ router.post('/reset/:tokenId',  (req, res, next) => {
       {
         var singleInsert = "update users set password=$1 where username=$2 RETURNING *",
           params = [encryption.encrypt(req.body.password),results[0].email_id]
-          console.log(params);
           client.query(singleInsert, params, function (error, result) {
            // Will contain your inserted rows
           done();
