@@ -61,7 +61,6 @@ router.get('/:srmId', oauth.authorise(), (req, res, next) => {
 
 router.post('/add', oauth.authorise(), (req, res, next) => {
   const results = [];
-  console.log(req.body);
   var Storage = multer.diskStorage({
       destination: function (req, file, callback) {
           // callback(null, "./images");

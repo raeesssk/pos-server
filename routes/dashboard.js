@@ -29,6 +29,54 @@ router.get('/salereport', oauth.authorise(), (req, res, next) => {
   });
 });
 
+
+router.post('/salereport/:srmId', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  const id = req.params.srmId;
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const query = client.query("SELECT count(om.om_id) as total,sum(om.om_amount) as amount FROM order_master om LEFT OUTER JOIN table_master tm on om.om_tm_id = tm.tm_id LEFT OUTER JOIN area_master am on tm.tm_am_id=am.am_id LEFT OUTER JOIN restaurant_master srm on om.om_srm_id=srm.srm_id where om.om_status=0 and om_created_at::date = CURRENT_DATE and om.om_status_type='closed' and om_srm_id=$1",[id]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+  done(err);
+  });
+});
+
+router.post('/monthlyreport', oauth.authorise(), (req, res, next) => {
+  const results = [];
+  pool.connect(function(err, client, done){
+    if(err) {
+      done();
+      // pg.end();
+      console.log("the error is"+err);
+      return res.status(500).json({success: false, data: err});
+    }
+    const query = client.query("SELECT count(om.om_id) as total,sum(om.om_amount) as amount FROM order_master om LEFT OUTER JOIN table_master tm on om.om_tm_id = tm.tm_id LEFT OUTER JOIN area_master am on tm.tm_am_id=am.am_id LEFT OUTER JOIN restaurant_master srm on om.om_srm_id=srm.srm_id where om.om_status=0 and date(om_created_at)::date BETWEEN $1 and $2 and om.om_status_type='closed' and om_srm_id=$3",[req.body.from_date,req.body.to_date,req.body.srm_id]);
+    query.on('row', (row) => {
+      results.push(row);
+    });
+    query.on('end', () => {
+      done();
+      // pg.end();
+      return res.json(results);
+    });
+  done(err);
+  });
+});
+
+
+
 router.get('/chequereceivedatereport', oauth.authorise(), (req, res, next) => {
   const results = [];
   pool.connect(function(err, client, done){
