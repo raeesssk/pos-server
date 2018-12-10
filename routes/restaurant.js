@@ -35,7 +35,31 @@ router.get('/:uId', oauth.authorise(), (req, res, next) => {
   });
 });
 
-router.get('/:srmId', oauth.authorise(), (req, res, next) => {
+// router.get('/:srmId', oauth.authorise(), (req, res, next) => {
+//   const results = [];
+//   const id = req.params.srmId;
+//   pool.connect(function(err, client, done){
+//     if(err) {
+//       done();
+//       // pg.end();
+//       console.log("the error is"+err);
+//       return res.status(500).json({success: false, data: err});
+//     }
+//     // SQL Query > Select Data
+//     const query = client.query('SELECT * FROM restaurant_master where srm_id=$1',[id]);
+//     query.on('row', (row) => {
+//       results.push(row);
+//     });
+//     query.on('end', () => {
+//       done();
+//       // pg.end();
+//       return res.json(results);
+//     });
+//   done(err);
+//   });
+// });
+
+router.post('/', oauth.authorise(), (req, res, next) => {
   const results = [];
   const id = req.params.srmId;
   pool.connect(function(err, client, done){
@@ -46,7 +70,7 @@ router.get('/:srmId', oauth.authorise(), (req, res, next) => {
       return res.status(500).json({success: false, data: err});
     }
     // SQL Query > Select Data
-    const query = client.query('SELECT * FROM restaurant_master where srm_id=$1',[id]);
+    const query = client.query('SELECT * FROM restaurant_master where srm_id=$1',[req.body.srm_id]);
     query.on('row', (row) => {
       results.push(row);
     });
